@@ -39,7 +39,7 @@ end
 
 local function PlayerData(Model, Parts)
 	local Data = {
-		Username = IsPlayerModel(Model) and "Player" or "NPC",
+		Username = tostring(Model),
 		Displayname = IsPlayerModel(Model) and "Player" or "NPC",
 		Userid = IsPlayerModel(Model) and 0 or -1,
 		Character = Model,
