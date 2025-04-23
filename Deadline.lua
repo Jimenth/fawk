@@ -34,7 +34,7 @@ end
 
 local function PlayerData(Model, Parts)
 	local Data = {
-		Username = "Player",
+		Username = tostring(Model),
 		Displayname = "Player",
 		Userid = 0,
 		Character = Model,
