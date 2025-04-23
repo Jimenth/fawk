@@ -1,7 +1,10 @@
-local Allowed_Entities = {"NPCs", "Players"}  -- "NPCs", "Players"
+local Allowed_Entities = {"NPCs"}  -- "NPCs", "Players" (Only for PVE)
 
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local TrackedModels = {}
+local Offsets = {
+	PlaceID = 0x198
+}
 
 local function IsPlayerModel(Model)
 	if findfirstchild(Model, "BillboardGui") then
@@ -115,6 +118,7 @@ end
 local function Update()
 	local Descendants = getchildren(Workspace)
 	local Seen = {}
+	local PlaceID = getmemoryvalue(Game, Offsets.PlaceID, "qword")
 
 	for _, Obj in ipairs(Descendants) do
 		if getclassname(Obj) == "Model" and getname(Obj) == "Male" then
@@ -122,9 +126,11 @@ local function Update()
 			local Parts = GetBodyParts(Obj)
 	
 			if Parts.Head and Parts.HumanoidRootPart then
-				if not table.find(Allowed_Entities, IsPlayerModel(Obj) and "Players" or "NPCs") then
-					continue
-				end
+				if PlaceID == 1054526971 then
+				    if not table.find(Allowed_Entities, IsPlayerModel(Obj) and "Players" or "NPCs") then
+					    continue
+				    end
+			    end
 	
 				if not TrackedModels[Key] then
 					local ID, Data = PlayerData(Obj, Parts)
