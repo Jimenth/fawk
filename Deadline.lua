@@ -98,7 +98,7 @@ local function LocalPlayerData()
 		Character = LocalPlayer,
 		Username = "diddy",
 		Displayname = "diddy",
-		Userid = 300,
+		Userid = 1,
 		Team = nil,
 		Tool = nil,
 		Humanoid = findfirstchild(LocalPlayer, "humanoid_root_part"),
@@ -125,6 +125,7 @@ spawn(function()
     while true do
 		wait()
 		Update()
-		LocalPlayerData()
 	end
 end)
+
+spawn(LocalPlayerData)
