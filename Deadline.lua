@@ -123,9 +123,8 @@ end
 
 spawn(function()
     while true do
-		wait(0.2)
+		wait()
 		Update()
+		LocalPlayerData()
 	end
 end)
-
-spawn(LocalPlayerData)
