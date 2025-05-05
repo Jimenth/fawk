@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local Path
+local Path = findfirstchild(Workspace, "NPCs")
 local TrackedModels = {}
 
 local function GetBodyParts(Model)
@@ -39,7 +39,7 @@ local function NPCData(Model, Parts)
 	local Health = gethealth(Humanoid)
 
 	local Data = {
-		Username = tostring(Model),
+		Username = "NPC " .. math.random(100, 999),
 		Displayname = getname(Model),
 		Userid = -1,
 		Character = Model,
