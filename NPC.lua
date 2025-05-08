@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local Path
+local Path = findfirstchild(Workspace, "NPCs")
 local TrackedModels = {}
 
 local function GetBodyParts(Model)
