@@ -39,7 +39,7 @@ local function NPCData(Model, Parts)
 	local Health = gethealth(Humanoid)
 
 	local Data = {
-		Username = "NPC " .. math.random(100, 999),
+		Username = tostring(Model),
 		Displayname = getname(Model),
 		Userid = -1,
 		Character = Model,
