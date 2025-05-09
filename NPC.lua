@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local Path = findfirstchild(Workspace, "NPCs")
+local Path = Workspace
 local TrackedModels = {}
 
 local function GetBodyParts(Model)
@@ -119,10 +119,14 @@ local function Update()
 	for _, NPC in ipairs(Descendants) do
 		local Humanoid = findfirstchild(NPC, "Humanoid")
 		if Humanoid and getparent(Humanoid) then
+			if is_team_check_active() then
+				continue
+			end
+
 			local Key = tostring(NPC)
 			local Parts = GetBodyParts(NPC)
 
-			if Parts.Head and Parts.HumanoidRootPart then
+			if Parts.Head and Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
 				if not TrackedModels[Key] then
 					local ID, Data = NPCData(NPC, Parts)
 					if add_model_data(Data, ID) then
@@ -144,7 +148,6 @@ local function Update()
 		end
 	end
 end
-
 
 spawn(function()
     while true do
