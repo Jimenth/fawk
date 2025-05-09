@@ -1,8 +1,12 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local LocalPlayer = findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
 local TrackedModels = {}
 
+local function GetLocalModel()
+    return findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
+end
+
 local function TeamCheck(Entity)
+	local LocalPlayer = GetLocalModel()
 	if not LocalPlayer then return false end
 
 	local Head = findfirstchild(Entity, "head")
@@ -61,7 +65,7 @@ local function PlayerData(Model, Parts)
 end
 
 local function LocalPlayerData()
-	if not LocalPlayer then return end
+	local LocalPlayer = findfirstchild(Workspace, "Camera")
 
 	local LocalData = {
 		LocalPlayer = LocalPlayer,
@@ -71,72 +75,70 @@ local function LocalPlayerData()
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
-		Humanoid = findfirstchild(LocalPlayer, "humanoid_root_part"),
+		Humanoid = LocalPlayer,
 		Health = 100,
 		MaxHealth = 100,
 		RigType = 0,
 
-		Head = findfirstchild(LocalPlayer, "head"),
-		RootPart = findfirstchild(LocalPlayer, "humanoid_root_part"),
-		LeftFoot = findfirstchild(LocalPlayer, "left_leg_vis"),
-		LowerTorso = findfirstchild(LocalPlayer, "torso"),
+		Head = LocalPlayer,
+		RootPart = LocalPlayer,
+		LeftFoot = LocalPlayer,
+		LowerTorso = LocalPlayer,
 		
-		LeftArm = findfirstchild(LocalPlayer, "left_arm_vis"),
-		LeftLeg = findfirstchild(LocalPlayer, "left_leg_vis"),
-		RightArm = findfirstchild(LocalPlayer, "right_arm_vis"),
-		RightLeg = findfirstchild(LocalPlayer, "right_leg_vis"),
-		UpperTorso = findfirstchild(LocalPlayer, "torso"),
+		LeftArm = LocalPlayer,
+		LeftLeg = LocalPlayer,
+		RightArm = LocalPlayer,
+		RightLeg = LocalPlayer,
+		UpperTorso = LocalPlayer,
 	}
 
 	return tostring(LocalPlayer), LocalData
 end
 
 local function Update()
-	if not LocalPlayer then return end
+    local LocalID, LocalData = LocalPlayerData()
 
-	local ID, LocalData = LocalPlayerData()
+    if LocalID and LocalData then
+        override_local_data(LocalData)
+    end
 
-	if ID and LocalData then
-		override_local_data(LocalData)
-	end
+    local Descendants = getchildren(findfirstchild(Workspace, "characters"))
+    local Seen = {}
 
-	local Descendants = getchildren(findfirstchild(Workspace, "characters"))
-	local Seen = {}
+    for _, Player in ipairs(Descendants) do
+        if getname(Player) ~= "StarterCharacter" then
+            local Key = tostring(Player)
+            local Parts = GetBodyParts(Player)
 
-	for _, Player in ipairs(Descendants) do
-		if getname(Player) ~= "StarterCharacter" then
-			local Key = tostring(Player)
-			local Parts = GetBodyParts(Player)
+            local Enemy = true
 
-			local Enemy = true
+            if is_team_check_active() then
+                Enemy = not TeamCheck(Player)
+            end
+            
+            if Parts.Head and Parts.HumanoidRootPart and Enemy then
+                if not TrackedModels[Key] then
+                    local ID, Data = PlayerData(Player, Parts)
+                    if add_model_data(Data, ID) then
+                        TrackedModels[ID] = Player
+                    end
+                end
+                Seen[Key] = true
+            end
+        end
+    end
 
-			if is_team_check_active() then
-				Enemy = not TeamCheck(Player)
-			end
-			
-			if Parts.Head and Parts.HumanoidRootPart and Enemy then
-				if not TrackedModels[Key] then
-					local ID, Data = PlayerData(Player, Parts)
-					if add_model_data(Data, ID) then
-						TrackedModels[ID] = Player
-					end
-				end
-				Seen[Key] = true
-			end
-		end
-	end
-
-	for Key, Model in pairs(TrackedModels) do
-		local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
-		if not HumanoidRootPart or not Seen[Key] then
-			remove_model_data(Key)
-			TrackedModels[Key] = nil
-		end
-	end
+    for Key, Model in pairs(TrackedModels) do
+        local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
+        if not HumanoidRootPart or not Seen[Key] then
+            remove_model_data(Key)
+            TrackedModels[Key] = nil
+        end
+    end
 end
 
 spawn(function()
-    while not LocalPlayer do
+    while not GetLocalModel() do
         wait()
     end
 
