@@ -38,8 +38,8 @@ local function PlayerData(Model, Parts)
 		Displayname = "Player",
 		Userid = 0,
 		Character = Model,
-		PrimaryPart = Parts.Head,
-		Humanoid = Parts.Head,
+		PrimaryPart = getprimarypart(Model),
+		Humanoid = Parts.HumanoidRootPart,
 		Head = Parts.Head,
         Torso = Parts.Torso,
         LeftArm = Parts.LeftArm, 
@@ -60,44 +60,14 @@ local function PlayerData(Model, Parts)
 	return tostring(Model), Data
 end
 
-local function Update()
-	local Descendants = getchildren(findfirstchild(Workspace, "characters"))
-	local Seen = {}
-
-	for _, Obj in ipairs(Descendants) do
-		if getname(Obj) ~= "StarterCharacter" then
-			local Key = tostring(Obj)
-			local Parts = GetBodyParts(Obj)
-	
-			if Parts.Head and Parts.HumanoidRootPart and not TeamCheck(Obj) then
-				if not TrackedModels[Key] then
-					local ID, Data = PlayerData(Obj, Parts)
-					if add_model_data(Data, ID) then
-						TrackedModels[ID] = Obj
-					end
-				end
-				Seen[Key] = true
-			end
-		end
-	end
-
-	for Key, Model in pairs(TrackedModels) do
-		local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
-		if not HumanoidRootPart or not Seen[Key] then
-			remove_model_data(Key)
-			TrackedModels[Key] = nil
-		end
-	end
-end
-
 local function LocalPlayerData()
 	if not LocalPlayer then return end
 
 	local LocalData = {
 		LocalPlayer = LocalPlayer,
 		Character = LocalPlayer,
-		Username = "diddy",
-		Displayname = "diddy",
+		Username = tostring(LocalPlayer),
+		Displayname = getname(getlocalplayer()),
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
@@ -118,14 +88,60 @@ local function LocalPlayerData()
 		UpperTorso = findfirstchild(LocalPlayer, "torso"),
 	}
 
-	override_local_data(LocalData)
+	return tostring(LocalPlayer), LocalData
+end
+
+local function Update()
+	if not LocalPlayer then return end
+
+	local ID, LocalData = LocalPlayerData()
+
+	if ID and LocalData then
+		override_local_data(LocalData)
+	end
+
+	local Descendants = getchildren(findfirstchild(Workspace, "characters"))
+	local Seen = {}
+
+	for _, Player in ipairs(Descendants) do
+		if getname(Player) ~= "StarterCharacter" then
+			local Key = tostring(Player)
+			local Parts = GetBodyParts(Player)
+
+			local Enemy = true
+
+			if is_team_check_active() then
+				Enemy = not TeamCheck(Player)
+			end
+			
+			if Parts.Head and Parts.HumanoidRootPart and Enemy then
+				if not TrackedModels[Key] then
+					local ID, Data = PlayerData(Player, Parts)
+					if add_model_data(Data, ID) then
+						TrackedModels[ID] = Player
+					end
+				end
+				Seen[Key] = true
+			end
+		end
+	end
+
+	for Key, Model in pairs(TrackedModels) do
+		local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
+		if not HumanoidRootPart or not Seen[Key] then
+			remove_model_data(Key)
+			TrackedModels[Key] = nil
+		end
+	end
 end
 
 spawn(function()
-    while true do
-		wait()
-		Update()
-	end
-end)
+    while not LocalPlayer do
+        wait()
+    end
 
-spawn(LocalPlayerData)
+    while true do
+        wait()
+        Update()
+    end
+end)
