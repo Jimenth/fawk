@@ -294,7 +294,7 @@ local function Update()
 				local Key = tostring(Animal)
 				local Parts = GetAnimalParts(Animal)
 
-				if Parts.Head and Parts.HumanoidRootPart and getname(Animal) ~= "Horse" then
+				if Parts.Head and Parts.HumanoidRootPart and not string.find(getname(Animal), "Horse") then
 					if not TrackedModels[Key] then
 						local ID, Data = AnimalData(Animal, Parts)
 						if add_model_data(Data, ID) then
