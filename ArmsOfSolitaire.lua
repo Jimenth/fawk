@@ -174,7 +174,9 @@ local function LocalPlayerData()
 		if LocalModel then break end
 	end
 
-	if not LocalModel then return end
+	if not LocalModel then
+        return nil
+    end
 
 	local Parts = GetBodyParts(LocalModel)
 	if not Parts.Head or not Parts.HumanoidRootPart then return end
@@ -233,19 +235,16 @@ local function LocalPlayerData()
 		}
 	}
 
-	override_local_data(LocalData)
+	return tostring(LocalPlayer), LocalData
 end
 
 spawn(function()
 	while true do
 		wait()
 		Update()
-	end
-end)
-
-spawn(function()
-	while true do
-		wait(2)
-		LocalPlayerData()
+		local ID, LocalData = LocalPlayerData()
+        if ID and LocalData then
+            override_local_data(LocalData)
+        end
 	end
 end)
