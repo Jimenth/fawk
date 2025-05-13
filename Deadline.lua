@@ -2,26 +2,24 @@ local Workspace = findfirstchildofclass(Game, "Workspace")
 local TrackedModels = {}
 
 local function GetLocalModel()
-    return findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
+    LocalPlayer = findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
+    return LocalPlayer
 end
 
 local function TeamCheck(Entity)
 	local LocalPlayer = GetLocalModel()
-	if not LocalPlayer then return false end
 
-	local Head = findfirstchild(Entity, "head")
-	local Head2 = findfirstchild(Head, "head")
-	local HeadObject = findfirstchild(Head2, "item")
-
-	local LocalPlayerHead = findfirstchild(LocalPlayer, "head")
-	local LocalPlayerHead2 = findfirstchild(LocalPlayerHead, "head")
-	local LocalPlayerHeadObject = findfirstchild(LocalPlayerHead2, "item")
-
-	if getclassname(HeadObject) == getclassname(LocalPlayerHeadObject) then
-		return true
-	else
-		return false
+	if not LocalPlayer then
+		return nil
 	end
+
+	local Head = findfirstchild(findfirstchild(Entity, "head"), "head")
+	local HeadObject = findfirstchild(Head, "item")
+
+	local LocalPlayerHead = findfirstchild(findfirstchild(LocalPlayer, "head"), "head")
+	local LocalPlayerHeadObject = findfirstchild(LocalPlayerHead, "item")
+
+    return getclassname(HeadObject) == getclassname(LocalPlayerHeadObject)
 end
 
 local function GetBodyParts(Model)
@@ -65,7 +63,13 @@ local function PlayerData(Model, Parts)
 end
 
 local function LocalPlayerData()
-	local LocalPlayer = findfirstchild(Workspace, "Camera")
+	local LocalPlayer = GetLocalModel()
+
+	if not LocalPlayer then
+		return nil
+	end
+
+	local Parts = GetBodyParts(LocalPlayer)
 
 	local LocalData = {
 		LocalPlayer = LocalPlayer,
@@ -75,33 +79,27 @@ local function LocalPlayerData()
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
-		Humanoid = LocalPlayer,
+		Humanoid = findfirstchild(LocalPlayer, "humanoid_root_part"),
 		Health = 100,
 		MaxHealth = 100,
 		RigType = 0,
 
-		Head = LocalPlayer,
-		RootPart = LocalPlayer,
-		LeftFoot = LocalPlayer,
-		LowerTorso = LocalPlayer,
+		Head = Parts.Head,
+		RootPart = Parts.HumanoidRootPart,
+		LeftFoot = Parts.LeftLeg,
+		LowerTorso = Parts.Torso,
 		
-		LeftArm = LocalPlayer,
-		LeftLeg = LocalPlayer,
-		RightArm = LocalPlayer,
-		RightLeg = LocalPlayer,
-		UpperTorso = LocalPlayer,
+		LeftArm = Parts.LeftArm,
+		LeftLeg = Parts.LeftLeg,
+		RightArm = Parts.RightArm,
+		RightLeg = Parts.RightLeg,
+		UpperTorso = Parts.Torso,
 	}
 
 	return tostring(LocalPlayer), LocalData
 end
 
 local function Update()
-    local LocalID, LocalData = LocalPlayerData()
-
-    if LocalID and LocalData then
-        override_local_data(LocalData)
-    end
-
     local Descendants = getchildren(findfirstchild(Workspace, "characters"))
     local Seen = {}
 
@@ -138,12 +136,13 @@ local function Update()
 end
 
 spawn(function()
-    while not GetLocalModel() do
-        wait()
-    end
-
     while true do
         wait()
         Update()
+
+		local LocalID, LocalData = LocalPlayerData()
+        if LocalID and LocalData then
+            override_local_data(LocalData)
+        end
     end
 end)
