@@ -46,8 +46,6 @@ local function GetSelf()
 	return ClosestModel
 end
 
-local LocalPlayer = GetSelf()
-
 local function GetBodyParts(Model)
 	return {
 		Head = findfirstchild(Model, "head"),
@@ -149,6 +147,35 @@ local function PlayerData(Model, Parts)
 	return tostring(Model), Data
 end
 
+local function LocalPlayerData()
+	if not GetSelf() then
+        return nil
+    end
+
+	local LocalPlayer = GetSelf()
+
+	local LocalData = {
+		LocalPlayer = LocalPlayer,
+		Character = LocalPlayer,
+		Username = "LocalPlayer",
+		Displayname = "LocalPlayer",
+		Userid = 1,
+		Team = nil,
+		Tool = nil,
+		Humanoid = LocalPlayer,
+		Health = 100,
+		MaxHealth = 100,
+		RigType = 1,
+
+		Head = findfirstchild(LocalPlayer, "head"),
+		RootPart = findfirstchild(LocalPlayer, "root"),
+		LeftFoot = findfirstchild(LocalPlayer, "lFoot"),
+		LowerTorso = findfirstchild(LocalPlayer, "stomach"),
+	}
+
+	return tostring(LocalPlayer), LocalData
+end
+
 local function Update()
 	local Folder = 0
 	local Descendants = nil
@@ -201,35 +228,13 @@ local function Update()
 	end
 end
 
-local function LocalPlayerData()
-	if not LocalPlayer then return end
-
-	local LocalData = {
-		LocalPlayer = LocalPlayer,
-		Character = LocalPlayer,
-		Username = "LocalPlayer",
-		Displayname = "LocalPlayer",
-		Userid = 1,
-		Team = nil,
-		Tool = nil,
-		Humanoid = LocalPlayer,
-		Health = 100,
-		MaxHealth = 100,
-		RigType = 1,
-
-		Head = findfirstchild(LocalPlayer, "head"),
-		RootPart = findfirstchild(LocalPlayer, "root"),
-		LeftFoot = findfirstchild(LocalPlayer, "lFoot"),
-		LowerTorso = findfirstchild(LocalPlayer, "stomach"),
-	}
-
-	override_local_data(LocalData)
-end
-
 spawn(function()
     while true do
 		wait()
 		Update()
-		LocalPlayerData()
+		local ID, LocalData = LocalPlayerData()
+        if ID and LocalData then
+            override_local_data(LocalData)
+        end
 	end
 end)
