@@ -45,6 +45,7 @@ local function AddEntity(OreName, Object, Ore)
     Text.Size = 13
     Text.Font = 1
     Text.Color = {255, 255, 255}
+    Text.Outline = true
 
     Drawings[Object] = {
         Drawing = Text,
