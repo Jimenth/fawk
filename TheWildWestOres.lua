@@ -3,17 +3,17 @@ local TWW = {
     RenderDistance = 400,
 }
 
-local Workspace = FindFirstChildOfClass(Game, "Workspace")
-local Entities = FindFirstChild(Workspace, "WORKSPACE_Entities")
-local Players = FindFirstChild(Entities, "Players")
-local Interactables = FindFirstChild(Workspace, "WORKSPACE_Interactables")
-local Ores = FindFirstChild(FindFirstChild(Interactables, "Mining"), "OreDeposits")
+local Workspace = findfirstchildofclass(Game, "Workspace")
+local Entities = findfirstchild(Workspace, "WORKSPACE_Entities")
+local Players = findfirstchild(Entities, "Players")
+local Interactables = findfirstchild(Workspace, "WORKSPACE_Interactables")
+local Ores = findfirstchild(findfirstchild(Interactables, "Mining"), "OreDeposits")
 
 local Drawings = {}
-local LocalPlayerName = GetName(GetLocalPlayer())
+local LocalPlayerName = getname(getlocalplayer())
 
 local function RefreshLocalCharacter()
-    return FindFirstChild(Players, LocalPlayerName)
+    return findfirstchild(Players, LocalPlayerName)
 end
 
 local function CalculateDistance(Pos1, Pos2)
@@ -24,102 +24,110 @@ end
 local function AddEntity(OreName, Object, Ore)
     if Drawings[Object] then return end
 
-    local Character = RefreshLocalCharacter()
-    if not Character then return end
-
-    local HumanoidRootPart = FindFirstChild(Character, "HumanoidRootPart")
-    if not HumanoidRootPart then return end
-
-    local DepositInfo = FindFirstChild(Ore, "DepositInfo")
-    local OreRemainingObj = DepositInfo and FindFirstChild(DepositInfo, "OreRemaining")
-    local OreRemaining = OreRemainingObj and getvalue(OreRemainingObj)
-
+    local DepositInfo = findfirstchild(Ore, "DepositInfo")
+    local Remaining = DepositInfo and findfirstchild(DepositInfo, "OreRemaining")
+    local OreRemaining = Remaining and getvalue(Remaining)
     if not OreRemaining or OreRemaining <= 0 then return end
 
-    local DisplayName = OreName:gsub("(%l)(%u)", "%1 %2") .. " [" .. tostring(OreRemaining) .. "]"
+    local Format = OreName:gsub("(%l)(%u)", "%1 %2")
 
     local Text = Drawing.new("Text")
-    Text.Text = DisplayName
     Text.Visible = true
     Text.Center = true
-    Text.Size = 13
+    Text.Size = 14
     Text.Font = 1
     Text.Color = {255, 255, 255}
     Text.Outline = true
+    Text.Text = Format .. " [" .. tostring(OreRemaining) .. "]"
 
     Drawings[Object] = {
         Drawing = Text,
         Object = Object,
         Ore = Ore,
-        HRP = HumanoidRootPart,
+        OreName = Format,
+        Remaining = Remaining,
+        LastRemaining = OreRemaining,
     }
-
-    spawn(function()
-        while true do
-            wait()
-
-            if not TWW.Enabled then
-                Text.Visible = false
-                continue
-            end
-
-            if not Object then
-                Text:Remove()
-                Drawings[Object] = nil
-                break
-            end
-
-            local ObjPos = GetPosition(Object)
-            local HRPPos = GetPosition(HumanoidRootPart)
-            local Distance = CalculateDistance(HRPPos, ObjPos)
-
-            if Distance <= TWW.RenderDistance then
-                local ScreenPos, OnScreen = WorldToScreenPoint({ObjPos.x, ObjPos.y, ObjPos.z})
-                if OnScreen and ScreenPos and ScreenPos.x and ScreenPos.y then
-                    local UpdatedRemaining = OreRemainingObj and getvalue(OreRemainingObj)
-                    if not UpdatedRemaining or UpdatedRemaining <= 0 then
-                        Text:Remove()
-                        Drawings[Object] = nil
-                        break
-                    end
-
-                    local Scale = math.max(0.8, 1 - (Distance / TWW.RenderDistance) * 0.535)
-                    Text.Size = 13 * Scale
-                    Text.Position = {ScreenPos.x - Text.Size / 2, ScreenPos.y - Text.Size / 2}
-                    Text.Text = OreName:gsub("(%l)(%u)", "%1 %2") .. " [" .. tostring(UpdatedRemaining) .. "]"
-                    Text.Visible = true
-                else
-                    Text.Visible = false
-                end
-            else
-                Text.Visible = false
-            end
-        end
-    end)
 end
 
 spawn(function()
-    while wait(2) do
+    while true do
+        wait(2)
         if not TWW.Enabled then continue end
 
         local Character = RefreshLocalCharacter()
         if not Character then continue end
 
-        for _, OreParent in ipairs(GetChildren(Ores)) do
-            local OreName = GetName(OreParent)
-            for _, Ore in ipairs(GetChildren(OreParent)) do
-                local Root = GetPrimaryPart(Ore)
+        for _, OreParent in ipairs(getchildren(Ores)) do
+            local OreName = getname(OreParent)
+            for _, Ore in ipairs(getchildren(OreParent)) do
+                local Root = getprimarypart(Ore)
                 if Root then
                     AddEntity(OreName, Root, Ore)
                 end
             end
         end
+    end
+end)
+
+spawn(function()
+    while true do
+        wait(1/240)
+        if not TWW.Enabled then
+            for _, data in pairs(Drawings) do
+                data.Drawing.Visible = false
+            end
+            continue
+        end
+
+        local Character = RefreshLocalCharacter()
+        if not Character then continue end
+        local HRP = findfirstchild(Character, "HumanoidRootPart")
+        if not HRP then continue end
+
+        local HRPPos = getposition(HRP)
 
         for Object, Data in pairs(Drawings) do
-            if not Data.Object then
-                Data.Drawing:Remove()
+            local Ore, Text = Data.Ore, Data.Drawing
+            local Remaining = Data.Remaining
+
+            if not Object or not Ore or not Remaining then
+                Text:Remove()
                 Drawings[Object] = nil
+                continue
             end
+
+            local OrePos = getposition(Object)
+            local Distance = CalculateDistance(HRPPos, OrePos)
+
+            if Distance > TWW.RenderDistance then
+                Text.Visible = false
+                continue
+            end
+
+            local ScreenPos, OnScreen = worldtoscreenpoint({OrePos.x, OrePos.y, OrePos.z})
+            if not OnScreen then
+                Text.Visible = false
+                continue
+            end
+
+            local UpdatedRemaining = getvalue(Remaining)
+            if not UpdatedRemaining or UpdatedRemaining <= 0 then
+                Text:Remove()
+                Drawings[Object] = nil
+                continue
+            end
+
+            if UpdatedRemaining ~= Data.LastRemaining then
+                Data.LastRemaining = UpdatedRemaining
+                Text.Text = Data.OreName .. " [" .. tostring(UpdatedRemaining) .. "]"
+            end
+
+            local Scale = math.max(0.8, 1 - (Distance / TWW.RenderDistance) * 0.535)
+            local Size = 14 * Scale
+            Text.Size = Size
+            Text.Position = {ScreenPos.x - Size / 2, ScreenPos.y - Size / 2}
+            Text.Visible = true
         end
     end
 end)
