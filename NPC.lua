@@ -1,6 +1,50 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local Path = Workspace
+local PlaceID = getmemoryvalue(Game, 0x1A0, "qword")
 local TrackedModels = {}
+
+local Path = Workspace
+
+local Universington = {
+    [187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
+	[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
+	[504035427] = findfirstchild(Workspace, "enemies"), -- Zombie Attack
+    [3349613241] = findfirstchild(Workspace, "NPCs"), -- AI Test
+	[1709832923] = findfirstchild(Workspace, "Zombies"), -- Zombie Uprising
+	[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
+	[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
+	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce") -- Infamy (Insanely Unoptimized Game)
+}
+
+local PIDtoContainer = {}
+
+local function HttpGetJson(URL)
+    local Response = httpget(URL)
+    return JSONDecode(Response)
+end
+
+local function UniverseCache(UniverseID, NPCContainer)
+    local URL = ("https://develop.roblox.com/v1/universes/%d/places?sortOrder=Asc&limit=100"):format(UniverseID)
+    local Data = HttpGetJson(URL)
+    local Places = Data["data"]
+    if not Places then
+        return
+    end
+
+    for _, Place in ipairs(Places) do
+        local PID = Place["id"] or Place["placeId"] or Place["placeid"]
+        if PID then
+            if NPCContainer then
+                PIDtoContainer[PID] = NPCContainer
+            else
+                print("Failed to get path for UniverseID:", UniverseID)
+            end
+        end
+    end
+end
+
+for UniverseID, NPCContainer in pairs(Universington) do
+    UniverseCache(UniverseID, NPCContainer)
+end
 
 local function GetBodyParts(Model)
 	return {
@@ -113,40 +157,41 @@ local function NPCData(Model, Parts)
 end
 
 local function Update()
-	local Descendants = getchildren(Path)
-	local Seen = {}
+    local NPCContainer = PIDtoContainer[PlaceID] or Path
+    local NPCPath = getchildren(NPCContainer) or {}
+    local Seen = {}
 
-	for _, NPC in ipairs(Descendants) do
-		local Humanoid = findfirstchild(NPC, "Humanoid")
-		if Humanoid and getparent(Humanoid) then
-			if is_team_check_active() then
-				continue
-			end
+    for _, NPC in ipairs(NPCPath) do
+        local Humanoid = findfirstchild(NPC, "Humanoid")
+        if Humanoid and getparent(Humanoid) then
+            if is_team_check_active() then
+                continue
+            end
 
-			local Key = tostring(NPC)
-			local Parts = GetBodyParts(NPC)
+            local Key = tostring(NPC)
+            local Parts = GetBodyParts(NPC)
 
-			if Parts.Head and Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
-				if not TrackedModels[Key] then
-					local ID, Data = NPCData(NPC, Parts)
-					if add_model_data(Data, ID) then
-						TrackedModels[ID] = NPC
-					end
-				else
-					edit_model_data({Health = gethealth(Humanoid)}, Key)
-				end
-				Seen[Key] = true
-			end
-		end
-	end
+            if Parts.Head and Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
+                if not TrackedModels[Key] then
+                    local ID, Data = NPCData(NPC, Parts)
+                    if add_model_data(Data, ID) then
+                        TrackedModels[ID] = NPC
+                    end
+                else
+                    edit_model_data({Health = gethealth(Humanoid)}, Key)
+                end
+                Seen[Key] = true
+            end
+        end
+    end
 
-	for Key, Model in pairs(TrackedModels) do
-		local HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
-		if not HumanoidRootPart or not Seen[Key] then
-			remove_model_data(Key)
-			TrackedModels[Key] = nil
-		end
-	end
+    for Key, Model in pairs(TrackedModels) do
+        local HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
+        if not HumanoidRootPart or not Seen[Key] then
+            remove_model_data(Key)
+            TrackedModels[Key] = nil
+        end
+    end
 end
 
 spawn(function()
