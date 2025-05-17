@@ -49,17 +49,17 @@ local function GetAnimalParts(Model)
 		UpperTorso = findfirstchild(Model, "Body"),
 		LowerTorso = findfirstchild(Model, "Body"),
 
-		LeftUpperArm = findfirstchild(Model, "LeftShoulder"), -- Shoulder to represent upper limb
-		LeftLowerArm = findfirstchild(Model, "LeftArm"), -- Forelimb
-		LeftHand = findfirstchild(Model, "LeftFrontHoof"), -- Hoof is like the "hand" in front legs
+		LeftUpperArm = findfirstchild(Model, "LeftShoulder"),
+		LeftLowerArm = findfirstchild(Model, "LeftArm"),
+		LeftHand = findfirstchild(Model, "LeftFrontHoof"),
 
 		RightUpperArm = findfirstchild(Model, "RightShoulder"),
 		RightLowerArm = findfirstchild(Model, "RightArm"),
 		RightHand = findfirstchild(Model, "RightFrontHoof"),
 
-		LeftUpperLeg = findfirstchild(Model, "LeftThigh"), -- Hind leg structure
+		LeftUpperLeg = findfirstchild(Model, "LeftThigh"),
 		LeftLowerLeg = findfirstchild(Model, "LeftLeg"),
-		LeftFoot = findfirstchild(Model, "LeftLeg"), -- No hoof part provided; reuse leg or set to nil
+		LeftFoot = findfirstchild(Model, "LeftLeg"),
 
 		RightUpperLeg = findfirstchild(Model, "RightThigh"),
 		RightLowerLeg = findfirstchild(Model, "RightLeg"),
