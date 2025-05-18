@@ -1,9 +1,9 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local PlaceID = getmemoryvalue(Game, 0x1A0, "qword")
 local TrackedModels = {}
+local PIDtoContainer = {}
 
 local Path = Workspace
-
 local Universington = {
     [187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
 	[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
@@ -12,19 +12,13 @@ local Universington = {
 	[1709832923] = findfirstchild(Workspace, "Zombies"), -- Zombie Uprising
 	[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
 	[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
-	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce") -- Infamy (Insanely Unoptimized Game)
+	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy (Insanely Unoptimized Game)
+	[2575793677] = findfirstchild(Workspace, "OtherWaifus") -- Aniphobia
 }
 
-local PIDtoContainer = {}
-
-local function HttpGetJson(URL)
-    local Response = httpget(URL)
-    return JSONDecode(Response)
-end
-
-local function UniverseCache(UniverseID, NPCContainer)
+local function UniverseCache(UniverseID, Container)
     local URL = ("https://develop.roblox.com/v1/universes/%d/places?sortOrder=Asc&limit=100"):format(UniverseID)
-    local Data = HttpGetJson(URL)
+    local Data = JSONDecode(httpget(URL))
     local Places = Data["data"]
     if not Places then
         return
@@ -33,17 +27,15 @@ local function UniverseCache(UniverseID, NPCContainer)
     for _, Place in ipairs(Places) do
         local PID = Place["id"] or Place["placeId"] or Place["placeid"]
         if PID then
-            if NPCContainer then
-                PIDtoContainer[PID] = NPCContainer
-            else
-                print("Failed to get path for UniverseID:", UniverseID)
+            if Container then
+                PIDtoContainer[PID] = Container
             end
         end
     end
 end
 
-for UniverseID, NPCContainer in pairs(Universington) do
-    UniverseCache(UniverseID, NPCContainer)
+for UniverseID, Container in pairs(Universington) do
+    UniverseCache(UniverseID, Container)
 end
 
 local function GetBodyParts(Model)
@@ -79,7 +71,7 @@ local function GetBodyParts(Model)
 end
 
 local function NPCData(Model, Parts)
-	local Humanoid = findfirstchild(Model, "Humanoid")
+	local Humanoid = findfirstchildofclass(Model, "Humanoid")
 	local Health = gethealth(Humanoid)
 
 	local Data = {
@@ -157,12 +149,13 @@ local function NPCData(Model, Parts)
 end
 
 local function Update()
-    local NPCContainer = PIDtoContainer[PlaceID] or Path
-    local NPCPath = getchildren(NPCContainer) or {}
+    local Container = PIDtoContainer[PlaceID] or Path
+    local NPCPath = getchildren(Container) or {}
     local Seen = {}
 
     for _, NPC in ipairs(NPCPath) do
-        local Humanoid = findfirstchild(NPC, "Humanoid")
+        local Humanoid = findfirstchildofclass(NPC, "Humanoid")
+
         if Humanoid and getparent(Humanoid) then
             if is_team_check_active() then
                 continue
