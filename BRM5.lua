@@ -38,7 +38,7 @@ end
 local function PlayerData(Model, Parts)
 	local Data = {
 		Username = tostring(Model),
-		Displayname = IsPlayerModel(Model) and "Player" or "NPC",
+		Displayname = IsPlayerModel(Model) and "Player" or "AI",
 		Userid = IsPlayerModel(Model) and 0 or -1,
 		Character = Model,
 		PrimaryPart = Parts.Head,
@@ -113,7 +113,7 @@ end
 local function Update()
 	local Descendants = getchildren(Workspace)
 	local Seen = {}
-	local PlaceID = getmemoryvalue(Game, 0x198, "qword")
+	local GameID = getmemoryvalue(Game, 0x198, "qword")
 
 	for _, Object in ipairs(Descendants) do
 		if getclassname(Object) == "Model" and getname(Object) == "Male" then
@@ -121,7 +121,7 @@ local function Update()
 			local Parts = GetBodyParts(Object)
 
 			if Parts.Head and Parts.HumanoidRootPart then
-				if PlaceID == 1054526971 and IsPlayerModel(Object) then
+				if GameID == 1054526971 and IsPlayerModel(Object) then
 					continue
 				end
 
@@ -152,11 +152,11 @@ local function LocalPlayerData()
 	local LocalData = {
 		LocalPlayer = Camera,
 		Character = Camera,
-		Username = "Self",
-		Displayname = "Self",
-		Userid = 3,
-		Team = nil,
-		Tool = nil,
+		Username = tostring(Camera),
+		Displayname = getname(getlocalplayer()),
+		Userid = 1,
+		Team = Camera,
+		Tool = Camera,
 		Humanoid = Camera,
 		Health = 100,
 		MaxHealth = 100,
@@ -173,7 +173,7 @@ end
 
 spawn(function()
     while true do
-		wait(0.2)
+		wait()
 		Update()
 	end
 end)
