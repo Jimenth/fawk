@@ -13,7 +13,8 @@ local Universington = {
 	[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
 	[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
 	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy (Insanely Unoptimized Game)
-	[2575793677] = findfirstchild(Workspace, "OtherWaifus") -- Aniphobia
+	[2575793677] = findfirstchild(Workspace, "OtherWaifus"), -- Aniphobia
+	[3766480386] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES") -- Call of Mini™ Zombies
 }
 
 local function UniverseCache(UniverseID, Container)
@@ -60,11 +61,11 @@ local function GetBodyParts(Model)
 		RightLowerLeg = findfirstchild(Model, "RightLowerLeg"),
 		RightFoot = findfirstchild(Model, "RightFoot"),
 
-		LeftLeg = findfirstchild(Model, "Left Leg"),
-		RightLeg = findfirstchild(Model, "Right Leg"),
-		LeftArm = findfirstchild(Model, "Left Arm"),
-		RightArm = findfirstchild(Model, "Right Arm"),
-		Torso = findfirstchild(Model, "Torso"),
+		LeftLeg = findfirstchild(Model, "Left Leg") or findfirstchild(Model, "LeftLeg"),
+		RightLeg = findfirstchild(Model, "Right Leg") or findfirstchild(Model, "RightLeg"),
+		LeftArm = findfirstchild(Model, "Left Arm") or findfirstchild(Model, "LeftArm"),
+		RightArm = findfirstchild(Model, "Right Arm") or findfirstchild(Model, "RightArm"),
+		Torso = findfirstchild(Model, "Torso") or findfirstchild(Model, "Body"),
 
 		HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart"),
 	}
