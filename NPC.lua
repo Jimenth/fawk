@@ -14,7 +14,8 @@ local Universington = {
 	[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
 	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy (Insanely Unoptimized Game)
 	[2575793677] = findfirstchild(Workspace, "OtherWaifus"), -- Aniphobia
-	[3766480386] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES") -- Call of Mini™ Zombies
+	[3766480386] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES"), -- Call of Mini™ Zombies
+	[5497606909] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1], "ZombiesSpawnedIn"), -- Call of Mini™ Zombies 2
 }
 
 local function UniverseCache(UniverseID, Container)
