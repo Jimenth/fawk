@@ -4,40 +4,41 @@ local TrackedModels = {}
 local PIDtoContainer = {}
 
 local Path = Workspace
-local Universington = {
-    [187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
-	[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
-	[504035427] = findfirstchild(Workspace, "enemies"), -- Zombie Attack
-    [3349613241] = findfirstchild(Workspace, "NPCs"), -- AI Test
-	[1709832923] = findfirstchild(Workspace, "Zombies"), -- Zombie Uprising
-	[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
-	[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
-	[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy (Insanely Unoptimized Game)
-	[2575793677] = findfirstchild(Workspace, "OtherWaifus"), -- Aniphobia
-	[3766480386] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES"), -- Call of Mini™ Zombies
-	[5497606909] = findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1], "ZombiesSpawnedIn"), -- Call of Mini™ Zombies 2
-}
 
-local function UniverseCache(UniverseID, Container)
-    local URL = ("https://develop.roblox.com/v1/universes/%d/places?sortOrder=Asc&limit=100"):format(UniverseID)
-    local Data = JSONDecode(httpget(URL))
-    local Places = Data["data"]
-    if not Places then
-        return
-    end
-
-    for _, Place in ipairs(Places) do
-        local PID = Place["id"] or Place["placeId"] or Place["placeid"]
-        if PID then
-            if Container then
-                PIDtoContainer[PID] = Container
-            end
-        end
-    end
+local function Universington()
+	return {
+		[187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
+		[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
+		[504035427] = findfirstchild(Workspace, "enemies"), -- Zombie Attack
+		[3349613241] = findfirstchild(Workspace, "NPCs"), -- AI Test
+		[1709832923] = findfirstchild(Workspace, "Zombies"), -- Zombie Uprising
+		[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
+		[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
+		[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy
+		[2575793677] = findfirstchild(Workspace, "OtherWaifus"), -- Aniphobia
+		[3766480386] = {findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES")}, -- Call of Mini™ Zombies
+		[5497606909] = { -- Call of Mini™ Zombies 2
+			findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1], "ZombiesSpawnedIn"),
+			getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1]
+		},
+	}
 end
 
-for UniverseID, Container in pairs(Universington) do
-    UniverseCache(UniverseID, Container)
+local function UniverseCache(UniverseID, Container)
+	local URL = ("https://develop.roblox.com/v1/universes/%d/places?sortOrder=Asc&limit=100"):format(UniverseID)
+	local Data = JSONDecode(httpget(URL))
+	local Places = Data["data"]
+
+	if not Places then
+		return
+	end
+
+	for _, Place in ipairs(Places) do
+		local PID = Place["id"] or Place["placeId"] or Place["placeid"]
+		if PID and Container then
+			PIDtoContainer[PID] = type(Container) == "table" and Container or {Container}
+		end
+	end
 end
 
 local function GetBodyParts(Model)
@@ -151,9 +152,16 @@ local function NPCData(Model, Parts)
 end
 
 local function Update()
-    local Container = PIDtoContainer[PlaceID] or Path
-    local NPCPath = getchildren(Container) or {}
+    local Containers = PIDtoContainer[PlaceID] or {Path}
+    local NPCPath = {}
     local Seen = {}
+
+    for _, Container in ipairs(Containers) do
+        local Entities = Container and getchildren(Container)
+        for _, Entity in ipairs(Entities) do
+            table.insert(NPCPath, Entity)
+        end
+    end
 
     for _, NPC in ipairs(NPCPath) do
         local Humanoid = findfirstchildofclass(NPC, "Humanoid")
@@ -193,5 +201,10 @@ spawn(function()
     while true do
 		wait()
 		Update()
+
+		local Uni = Universington()
+		for UniverseID, Container in pairs(Uni) do
+			UniverseCache(UniverseID, Container)
+		end
 	end
 end)
