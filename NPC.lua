@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local PlaceID = getmemoryvalue(Game, 0x1A0, "qword")
+local PlaceID = getplaceid()
 local TrackedModels = {}
 local PIDtoContainer = {}
 
@@ -21,6 +21,7 @@ local function Universington()
 			findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1], "ZombiesSpawnedIn"),
 			getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1]
 		},
+		[3326279937] = findfirstchild(findfirstchild(Workspace, "NPCs"), "Custom"), -- Blackout Zombies
 	}
 end
 
