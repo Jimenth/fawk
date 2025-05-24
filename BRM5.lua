@@ -9,17 +9,6 @@ local function IsPlayerModel(Model)
 	end
 end
 
-local function IsVIPTarget(Model)
-	for _, Accessory in ipairs(getchildren(Model)) do
-		local AccessoryName = getname(Accessory)
-		if AccessoryName == "AI_FieldCapPod" or AccessoryName == "AI_FieldCap" or AccessoryName == "AI_6B45_Rifleman" then
-			return true
-		end
-	end
-
-	return false
-end
-
 local function GetBodyParts(Model)
 	return {
 		Head = findfirstchild(Model, "Head"),
@@ -49,7 +38,7 @@ end
 local function PlayerData(Model, Parts)
 	local Data = {
 		Username = tostring(Model),
-		Displayname = IsVIPTarget(Model) and "AI (VIP)" or (IsPlayerModel(Model) and "Player" or "AI"),
+		Displayname = IsPlayerModel(Model) and "Player" or "AI",
 		Userid = IsPlayerModel(Model) and 0 or -1,
 		Character = Model,
 		PrimaryPart = Parts.Head,
