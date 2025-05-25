@@ -44,6 +44,30 @@ local function UniverseCache(UniverseID, Container)
 	end
 end
 
+local function GetPlaceName(PlaceId)
+    local Success1, UniverseResult = pcall(function()
+        local Url = ("https://apis.roblox.com/universes/v1/places/%d/universe"):format(PlaceId)
+        return JSONDecode(HttpGet(Url))
+    end)
+
+    if not Success1 or not UniverseResult or not UniverseResult.universeId then
+        return "Unknown Game"
+    end
+
+    local UniverseId = UniverseResult.universeId
+
+    local Success2, GameResult = pcall(function()
+        local Url = ("https://games.roblox.com/v1/games?universeIds=%d"):format(UniverseId)
+        return JSONDecode(HttpGet(Url))
+    end)
+
+    if Success2 and GameResult and GameResult.data and GameResult.data[1] and GameResult.data[1].name then
+        return GameResult.data[1].name
+    end
+
+    return "Unknown Game"
+end
+
 local function GetBodyParts(Model)
 	return {
 		Head = findfirstchild(Model, "Head"),
@@ -153,6 +177,8 @@ local function NPCData(Model, Parts)
 
 	return tostring(Model), Data
 end
+
+SendNotification("Initialized for " .. GetPlaceName(PlaceID), "info")
 
 local function Update()
     local Containers = PIDtoContainer[PlaceID] or {Path}
