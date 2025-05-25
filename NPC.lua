@@ -22,6 +22,8 @@ local function Universington()
 			getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1]
 		},
 		[3326279937] = findfirstchild(findfirstchild(Workspace, "NPCs"), "Custom"), -- Blackout Zombies
+		[1000233041] = findfirstchild(findfirstchild(findfirstchild(Workspace, "GameObjects"), "Physical"), "Employees"), -- SCP 3008
+		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
 	}
 end
 
