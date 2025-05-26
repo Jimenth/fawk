@@ -2,9 +2,9 @@ local Workspace = findfirstchildofclass(Game, "Workspace")
 local PlaceID = getplaceid()
 local TrackedModels = {}
 local PIDtoContainer = {}
+local Peanut = false
 
 local Path = Workspace
-
 local function Universington()
 	return {
 		[187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
@@ -228,12 +228,15 @@ end
 
 spawn(function()
     while true do
-		wait()
+		wait(1/15)
 		Update()
 
-		local Uni = Universington()
-		for UniverseID, Container in pairs(Uni) do
-			UniverseCache(UniverseID, Container)
-		end
+        if not Peanut then
+            for UniverseID, Container in pairs(Universington()) do
+                UniverseCache(UniverseID, Container)
+            end
+			
+            UniverseCached = true
+        end
 	end
 end)
