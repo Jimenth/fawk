@@ -13,13 +13,10 @@ local function TeamCheck(Entity)
 		return nil
 	end
 
-	local Head = findfirstchild(findfirstchild(Entity, "head"), "head")
-	local HeadObject = findfirstchild(Head, "item")
+	local Object = findfirstchild(findfirstchild(findfirstchild(Entity, "head"), "head"), "item")
+	local LocalObject = findfirstchild(findfirstchild(findfirstchild(LocalPlayer, "head"), "head"), "item")
 
-	local LocalPlayerHead = findfirstchild(findfirstchild(LocalPlayer, "head"), "head")
-	local LocalPlayerHeadObject = findfirstchild(LocalPlayerHead, "item")
-
-    return getclassname(HeadObject) == getclassname(LocalPlayerHeadObject)
+    return getclassname(Object) == getclassname(LocalObject)
 end
 
 local function GetBodyParts(Model)
@@ -107,7 +104,6 @@ local function Update()
         if getname(Player) ~= "StarterCharacter" then
             local Key = tostring(Player)
             local Parts = GetBodyParts(Player)
-
             local Enemy = true
 
             if is_team_check_active() then
@@ -121,6 +117,7 @@ local function Update()
                         TrackedModels[ID] = Player
                     end
                 end
+
                 Seen[Key] = true
             end
         end
@@ -137,7 +134,7 @@ end
 
 spawn(function()
     while true do
-        wait()
+        wait(1/30)
         Update()
 
 		local LocalID, LocalData = LocalPlayerData()
