@@ -33,8 +33,8 @@ local function GetSelf()
 			local Head = findfirstchild(Model, "head")
 			if Head and Camera then
 				local HeadPos = getposition(Head)
-				local CamPos = getposition(Camera)
-				local Distance = CalculateDistance(HeadPos, CamPos)
+				local CameraPos = getposition(Camera)
+				local Distance = CalculateDistance(HeadPos, CameraPos)
 				if Distance < ShortestDistance then
 					ShortestDistance = Distance
 					ClosestModel = Model
@@ -157,8 +157,8 @@ local function LocalPlayerData()
 	local LocalData = {
 		LocalPlayer = LocalPlayer,
 		Character = LocalPlayer,
-		Username = "LocalPlayer",
-		Displayname = "LocalPlayer",
+		Username = tostring(LocalPlayer),
+		Displayname = getname(getlocalplayer()),
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
@@ -211,6 +211,7 @@ local function Update()
 									TrackedModels[ID] = Player
 								end
 							end
+
 							Seen[Key] = true
 						end
 					end
@@ -230,11 +231,11 @@ end
 
 spawn(function()
     while true do
-		wait()
+		wait(1/60)
 		Update()
-		local ID, LocalData = LocalPlayerData()
-        if ID and LocalData then
-            override_local_data(LocalData)
+
+        if LocalPlayerData() then
+            override_local_data(LocalPlayerData())
         end
 	end
 end)
