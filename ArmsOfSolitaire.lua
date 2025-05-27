@@ -1,8 +1,7 @@
+local TrackedModels = {}
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local GameFolder = findfirstchild(Workspace, "Game")
 local PlayersFolder = findfirstchild(GameFolder, "Players")
-local LocalPlayerName = getname(getlocalplayer())
-local TrackedModels = {}
 
 local function GetBodyParts(Model)
 	return {
@@ -112,7 +111,7 @@ local function GetLocalPlayerTeam()
 		local TeamFolder = findfirstchild(PlayersFolder, Team)
 		if TeamFolder then
 			for _, Model in ipairs(getchildren(TeamFolder)) do
-				if getname(Model) == LocalPlayerName then
+				if getname(Model) == getname(getlocalplayer()) then
 					return TeamFolder
 				end
 			end
@@ -129,7 +128,7 @@ local function Update()
 		local TeamFolder = findfirstchild(PlayersFolder, Team)
 		if TeamFolder and TeamFolder ~= LocalTeam then
 			for _, Player in ipairs(getchildren(TeamFolder)) do
-				if getclassname(Player) == "Model" and getname(Player) ~= LocalPlayerName then
+				if getclassname(Player) == "Model" and getname(Player) ~= getname(getlocalplayer()) then
 					local Key = tostring(Player)
 					local Parts = GetBodyParts(Player)
 
@@ -159,33 +158,33 @@ local function Update()
 end
 
 local function LocalPlayerData()
-	local LocalModel = nil
+	local LocalPlayer = nil
 
 	for _, Team in ipairs({ "Blue", "Green" }) do
 		local TeamFolder = findfirstchild(PlayersFolder, Team)
 		if TeamFolder then
 			for _, Model in ipairs(getchildren(TeamFolder)) do
-				if getname(Model) == LocalPlayerName then
-					LocalModel = Model
+				if getname(Model) == getname(getlocalplayer()) then
+					LocalPlayer = Model
 					break
 				end
 			end
 		end
-		if LocalModel then break end
+		if LocalPlayer then break end
 	end
 
-	if not LocalModel then
+	if not LocalPlayer then
         return nil
     end
 
-	local Parts = GetBodyParts(LocalModel)
-	if not Parts.Head or not Parts.HumanoidRootPart then return end
+	local Parts = GetBodyParts(LocalPlayer)
+	if not Parts.HumanoidRootPart then return end
 
 	local LocalData = {
-		LocalPlayer = LocalModel,
-		Character = LocalModel,
-		Username = LocalPlayerName,
-		Displayname = LocalPlayerName,
+		LocalPlayer = LocalPlayer,
+		Character = LocalPlayer,
+		Username = tostring(LocalPlayer),
+		Displayname = getname(getlocalplayer()),
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
@@ -240,11 +239,11 @@ end
 
 spawn(function()
 	while true do
-		wait()
+		wait(1/60)
 		Update()
-		local ID, LocalData = LocalPlayerData()
-        if ID and LocalData then
-            override_local_data(LocalData)
+
+        if LocalPlayerData() then
+            override_local_data(LocalPlayerData())
         end
 	end
 end)
