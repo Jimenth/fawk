@@ -1,12 +1,8 @@
-local Workspace = findfirstchildofclass(Game, "Workspace")
 local TrackedModels = {}
+local Workspace = findfirstchildofclass(Game, "Workspace")
 
 local function IsPlayerModel(Model)
-	if findfirstchild(Model, "BillboardGui") then
-		return true
-	else
-		return false
-	end
+    return findfirstchild(Model, "BillboardGui")
 end
 
 local function GetBodyParts(Model)
@@ -113,7 +109,7 @@ end
 local function Update()
 	local Descendants = getchildren(Workspace)
 	local Seen = {}
-	local GameID = getmemoryvalue(Game, 0x198, "qword")
+	local GameID = getgameid()
 
 	for _, Object in ipairs(Descendants) do
 		if getclassname(Object) == "Model" and getname(Object) == "Male" then
@@ -131,6 +127,7 @@ local function Update()
 						TrackedModels[ID] = Object
 					end
 				end
+				
 				Seen[Key] = true
 			end
 		end
@@ -173,9 +170,11 @@ end
 
 spawn(function()
     while true do
-		wait()
+		wait(1/60)
 		Update()
+
+        if LocalPlayerData() then
+            override_local_data(LocalPlayerData())
+        end
 	end
 end)
-
-spawn(LocalPlayerData)
