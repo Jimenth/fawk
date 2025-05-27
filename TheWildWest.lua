@@ -1,3 +1,4 @@
+local TrackedModels = {}
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local Entities = findfirstchild(Workspace, "WORKSPACE_Entities")
 local Players = findfirstchild(Entities, "Players")
@@ -7,8 +8,6 @@ local function RefreshLocalCharacter()
     LocalPlayer = findfirstchild(Players, getname(getlocalplayer()))
     return LocalPlayer
 end
-
-local TrackedModels = {}
 
 local function GetBodyParts(Model)
 	return {
@@ -76,7 +75,7 @@ local function PlayerData(Model, Parts)
 	local Data = {
 		Username = tostring(Model),
 		Displayname = getname(Model),
-		Userid = 0,
+		Userid = 3,
 		Character = Model,
 		PrimaryPart = getprimarypart(Model),
 		Humanoid = Humanoid,
@@ -320,12 +319,11 @@ end
 
 spawn(function()
     while true do
-        wait()
+        wait(1/60)
         Update()
 
-        local ID, LocalData = LocalPlayerData()
-        if ID and LocalData then
-            override_local_data(LocalData)
+        if LocalPlayerData() then
+            override_local_data(LocalPlayerData())
         end
     end
 end)
