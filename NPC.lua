@@ -1,4 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
+local Players = findfirstchildofclass(Game, "Players")
 local PlaceID = getplaceid()
 local TrackedModels = {}
 local PIDtoContainer = {}
@@ -24,6 +25,9 @@ local function Universington()
 		[3326279937] = findfirstchild(findfirstchild(Workspace, "NPCs"), "Custom"), -- Blackout Zombies
 		[1000233041] = findfirstchild(findfirstchild(findfirstchild(Workspace, "GameObjects"), "Physical"), "Employees"), -- SCP 3008
 		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
+		[1003981402] = findfirstchild(Workspace, "Zombies"), -- Reminiscence Zombies
+		[3747388906] = getchildren(findfirstchild(Workspace, "Military")) -- Fallen Survival
+
 	}
 end
 
@@ -178,7 +182,83 @@ local function NPCData(Model, Parts)
 	return tostring(Model), Data
 end
 
-SendNotification("Initialized for " .. GetPlaceName(PlaceID), "info")
+local function PlayerData(Model, Parts)
+	local Humanoid = findfirstchildofclass(Model, "Humanoid")
+	local Health = gethealth(Humanoid)
+
+	local Data = {
+		Username = tostring(Model),
+		Displayname = getname(Model),
+		Userid = 1,
+		Character = Model,
+		PrimaryPart = getprimarypart(Model),
+		Humanoid = Humanoid,
+		Head = Parts.Head,
+        Torso = Parts.Torso or Parts.UpperTorso,
+        UpperTorso = Parts.UpperTorso,
+        LowerTorso = Parts.LowerTorso,
+        LeftArm = Parts.LeftArm or Parts.LeftUpperArm, 
+		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
+        RightArm = Parts.RightArm or Parts.RightUpperArm, 
+		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
+        LeftUpperArm = Parts.LeftUpperArm,
+        LeftLowerArm = Parts.LeftLowerArm,
+        LeftHand = Parts.LeftHand,
+        RightUpperArm = Parts.RightUpperArm,
+        RightLowerArm = Parts.RightLowerArm,
+        RightHand = Parts.RightHand,
+        LeftUpperLeg = Parts.LeftUpperLeg,
+        LeftLowerLeg = Parts.LeftLowerLeg,
+        LeftFoot = Parts.LeftFoot,
+        RightUpperLeg = Parts.RightUpperLeg,
+        RightLowerLeg = Parts.RightLowerLeg,
+        RightFoot = Parts.RightFoot,
+		BodyHeightScale = 1,
+		RigType = findfirstchild(Model, "Torso") and 0 or 1,
+		Whitelisted = false,
+		Archenemies = false,
+		Aimbot_Part = Parts.Head,
+		Aimbot_TP_Part = Parts.Head,
+		Triggerbot_Part = Parts.Head,
+		Health = Health,
+		MaxHealth = getmaxhealth(Humanoid),
+		body_parts_data = {
+			{ name = "LowerTorso", part = Parts.LowerTorso },
+			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
+			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
+			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
+			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
+			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
+			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
+			{ name = "RightUpperArm", part = Parts.RightUpperArm },
+			{ name = "RightLowerArm", part = Parts.RightLowerArm },
+		},
+		full_body_data = {
+			{ name = "Head", part = Parts.Head },
+			{ name = "UpperTorso", part = Parts.UpperTorso },
+			{ name = "LowerTorso", part = Parts.LowerTorso },
+			{ name = "HumanoidRootPart", part = Parts.HumanoidRootPart },
+		
+			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
+			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
+			{ name = "LeftHand", part = Parts.LeftHand },
+		
+			{ name = "RightUpperArm", part = Parts.RightUpperArm },
+			{ name = "RightLowerArm", part = Parts.RightLowerArm },
+			{ name = "RightHand", part = Parts.RightHand },
+		
+			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
+			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
+			{ name = "LeftFoot", part = Parts.LeftFoot },
+		
+			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
+			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
+			{ name = "RightFoot", part = Parts.RightFoot },
+		}
+	}
+
+	return tostring(Model), Data
+end
 
 local function Update()
     local Containers = PIDtoContainer[PlaceID] or {Path}
@@ -203,7 +283,7 @@ local function Update()
             local Key = tostring(NPC)
             local Parts = GetBodyParts(NPC)
 
-            if Parts.Head and Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
+            if Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
                 if not TrackedModels[Key] then
                     local ID, Data = NPCData(NPC, Parts)
                     if add_model_data(Data, ID) then
@@ -212,6 +292,30 @@ local function Update()
                 else
                     edit_model_data({Health = gethealth(Humanoid)}, Key)
                 end
+
+                Seen[Key] = true
+            end
+        end
+    end
+
+	for _, Player in ipairs(getchildren(Players)) do
+		local Character = getcharacter(Player)
+        local Humanoid = findfirstchildofclass(Character, "Humanoid")
+
+        if Character then
+            local Key = tostring(Character)
+            local Parts = GetBodyParts(Character)
+
+            if Parts.HumanoidRootPart and Character ~= getcharacter(getlocalplayer()) then
+                if not TrackedModels[Key] then
+                    local ID, Data = PlayerData(Character, Parts)
+                    if add_model_data(Data, ID) then
+                        TrackedModels[ID] = Character
+                    end
+                else
+                    edit_model_data({Health = gethealth(Humanoid)}, Key)
+                end
+
                 Seen[Key] = true
             end
         end
@@ -228,7 +332,7 @@ end
 
 spawn(function()
     while true do
-		wait(1/15)
+		wait(1/30)
 		Update()
 
         if not Peanut then
@@ -240,3 +344,5 @@ spawn(function()
         end
 	end
 end)
+
+SendNotification("Initialized for " .. GetPlaceName(PlaceID), "info")
