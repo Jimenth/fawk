@@ -242,8 +242,9 @@ spawn(function()
 		wait(1/60)
 		Update()
 
-        if LocalPlayerData() then
-            override_local_data(LocalPlayerData())
+        local LocalID, LocalData = LocalPlayerData()
+        if LocalID and LocalData then
+            override_local_data(LocalData)
         end
 	end
 end)
