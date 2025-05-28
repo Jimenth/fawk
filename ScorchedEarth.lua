@@ -154,24 +154,29 @@ local function LocalPlayerData()
 
 	local LocalPlayer = GetSelf()
 
-	local LocalData = {
-		LocalPlayer = LocalPlayer,
-		Character = LocalPlayer,
-		Username = tostring(LocalPlayer),
-		Displayname = getname(getlocalplayer()),
-		Userid = 1,
-		Team = nil,
-		Tool = nil,
-		Humanoid = LocalPlayer,
-		Health = 100,
-		MaxHealth = 100,
-		RigType = 1,
+    local LocalData = {
+        LocalPlayer = LocalPlayer,
+        Character = LocalPlayer,
+        Username = tostring(LocalPlayer),
+        Displayname = getname(getlocalplayer()),
+        Userid = 1,
 
-		Head = findfirstchild(LocalPlayer, "head"),
-		RootPart = findfirstchild(LocalPlayer, "root"),
-		LeftFoot = findfirstchild(LocalPlayer, "lFoot"),
-		LowerTorso = findfirstchild(LocalPlayer, "stomach"),
-	}
+        Humanoid = findfirstchild(LocalPlayer, "root"),
+        Health = 100,
+        MaxHealth = 100,
+        RigType = 1,
+
+        Head = findfirstchild(LocalPlayer, "head"),
+        RootPart = findfirstchild(LocalPlayer, "root"),
+        LeftFoot = findfirstchild(LocalPlayer, "lLegLower"),
+        LowerTorso = findfirstchild(LocalPlayer, "stomach"),
+
+        LeftArm = findfirstchild(LocalPlayer, "lArmUpper"),
+        LeftLeg = findfirstchild(LocalPlayer, "lLegUpper"),
+        RightArm = findfirstchild(LocalPlayer, "rArmUpper"),
+        RightLeg = findfirstchild(LocalPlayer, "rLegUpper"),
+        UpperTorso = findfirstchild(LocalPlayer, "torso"),
+    }
 
 	return tostring(LocalPlayer), LocalData
 end
@@ -200,7 +205,7 @@ local function Update()
 				if not Teamates[Key] then
 					local Torso = findfirstchild(Player, "torso")
 					
-					if Torso and findfirstchild(Torso, "tag") then
+					if is_team_check_active() and Torso and findfirstchild(Torso, "tag") then
 						Teamates[Key] = true
 					else
 						local Parts = GetBodyParts(Player)
@@ -211,7 +216,7 @@ local function Update()
 									TrackedModels[ID] = Player
 								end
 							end
-
+							
 							Seen[Key] = true
 						end
 					end
@@ -234,8 +239,9 @@ spawn(function()
 		wait(1/60)
 		Update()
 
-        if LocalPlayerData() then
-            override_local_data(LocalPlayerData())
+        local LocalID, LocalData = LocalPlayerData()
+        if LocalID and LocalData then
+            override_local_data(LocalData)
         end
 	end
 end)
