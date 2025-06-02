@@ -26,8 +26,8 @@ local function Universington()
 		[1000233041] = findfirstchild(findfirstchild(findfirstchild(Workspace, "GameObjects"), "Physical"), "Employees"), -- SCP 3008
 		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
 		[1003981402] = findfirstchild(Workspace, "Zombies"), -- Reminiscence Zombies
-		[3747388906] = getchildren(findfirstchild(Workspace, "Military")) -- Fallen Survival
-
+		[3747388906] = getchildren(findfirstchild(Workspace, "Military")), -- Fallen Survival
+		[1845461951] = findfirstchild(Workspace, "Players")
 	}
 end
 
@@ -260,6 +260,32 @@ local function PlayerData(Model, Parts)
 	return tostring(Model), Data
 end
 
+local function LocalPlayerData()
+	local Camera = findfirstchild(Workspace, "Camera")
+	if not Camera then return end
+
+	local LocalData = {
+		LocalPlayer = Camera,
+		Character = Camera,
+		Username = tostring(Camera),
+		Displayname = getname(getlocalplayer()),
+		Userid = 1,
+		Team = Camera,
+		Tool = Camera,
+		Humanoid = Camera,
+		Health = 100,
+		MaxHealth = 100,
+		RigType = 1,
+
+		Head = Camera,
+		RootPart = Camera,
+		LeftFoot = Camera,
+		LowerTorso = Camera,
+	}
+
+	override_local_data(LocalData)
+end
+
 local function Update()
     local Containers = PIDtoContainer[PlaceID] or {Path}
     local NPCPath = {}
@@ -332,7 +358,7 @@ end
 
 spawn(function()
     while true do
-		wait(1/30)
+		wait(1/60)
 		Update()
 
         if not Peanut then
@@ -342,6 +368,13 @@ spawn(function()
 			
             UniverseCached = true
         end
+
+		if not getcharacter(getlocalplayer()) then
+			local LocalID, LocalData = LocalPlayerData()
+            if LocalID and LocalData then
+                override_local_data(LocalData)
+            end
+		end
 	end
 end)
 
