@@ -1,12 +1,8 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local Players = findfirstchildofclass(Game, "Players")
-local PlaceID = getplaceid()
-local TrackedModels = {}
-local PIDtoContainer = {}
-local Peanut = false
+local Added = {}
 
-local Path = Workspace
-local function Universington()
+local function Games()
 	return {
 		[187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
 		[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
@@ -27,52 +23,10 @@ local function Universington()
 		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
 		[1003981402] = findfirstchild(Workspace, "Zombies"), -- Reminiscence Zombies
 		[3747388906] = getchildren(findfirstchild(Workspace, "Military")), -- Fallen Survival
-		[1845461951] = findfirstchild(Workspace, "Players")
 	}
 end
 
-local function UniverseCache(UniverseID, Container)
-	local URL = ("https://develop.roblox.com/v1/universes/%d/places?sortOrder=Asc&limit=100"):format(UniverseID)
-	local Data = JSONDecode(httpget(URL))
-	local Places = Data["data"]
-
-	if not Places then
-		return
-	end
-
-	for _, Place in ipairs(Places) do
-		local PID = Place["id"] or Place["placeId"] or Place["placeid"]
-		if PID and Container then
-			PIDtoContainer[PID] = type(Container) == "table" and Container or {Container}
-		end
-	end
-end
-
-local function GetPlaceName(PlaceId)
-    local Success1, UniverseResult = pcall(function()
-        local Url = ("https://apis.roblox.com/universes/v1/places/%d/universe"):format(PlaceId)
-        return JSONDecode(HttpGet(Url))
-    end)
-
-    if not Success1 or not UniverseResult or not UniverseResult.universeId then
-        return "Unknown Game"
-    end
-
-    local UniverseId = UniverseResult.universeId
-
-    local Success2, GameResult = pcall(function()
-        local Url = ("https://games.roblox.com/v1/games?universeIds=%d"):format(UniverseId)
-        return JSONDecode(HttpGet(Url))
-    end)
-
-    if Success2 and GameResult and GameResult.data and GameResult.data[1] and GameResult.data[1].name then
-        return GameResult.data[1].name
-    end
-
-    return "Unknown Game"
-end
-
-local function GetBodyParts(Model)
+local function EntityParts(Model)
 	return {
 		Head = findfirstchild(Model, "Head"),
 		UpperTorso = findfirstchild(Model, "UpperTorso"),
@@ -104,7 +58,7 @@ local function GetBodyParts(Model)
 	}
 end
 
-local function NPCData(Model, Parts)
+local function EntityData(Model, Parts)
 	local Humanoid = findfirstchildofclass(Model, "Humanoid")
 	local Health = gethealth(Humanoid)
 
@@ -182,143 +136,111 @@ local function NPCData(Model, Parts)
 	return tostring(Model), Data
 end
 
-local function PlayerData(Model, Parts)
-	local Humanoid = findfirstchildofclass(Model, "Humanoid")
+local function PlayerData(Player, Parts)
+	local Character = getcharacter(Player)
+	local Humanoid = findfirstchildofclass(Character, "Humanoid")
 	local Health = gethealth(Humanoid)
 
 	local Data = {
-		Username = tostring(Model),
-		Displayname = getname(Model),
-		Userid = 1,
-		Character = Model,
-		PrimaryPart = getprimarypart(Model),
+		Username = getname(Player),
+		Displayname = getdisplayname(Player),
+		Userid = getuserid(Player),
+		Character = Character,
+		PrimaryPart = getprimarypart(Character),
 		Humanoid = Humanoid,
-		Head = Parts.Head,
-        Torso = Parts.Torso or Parts.UpperTorso,
-        UpperTorso = Parts.UpperTorso,
-        LowerTorso = Parts.LowerTorso,
-        LeftArm = Parts.LeftArm or Parts.LeftUpperArm, 
-		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
-        RightArm = Parts.RightArm or Parts.RightUpperArm, 
-		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
-        LeftUpperArm = Parts.LeftUpperArm,
-        LeftLowerArm = Parts.LeftLowerArm,
-        LeftHand = Parts.LeftHand,
-        RightUpperArm = Parts.RightUpperArm,
-        RightLowerArm = Parts.RightLowerArm,
-        RightHand = Parts.RightHand,
-        LeftUpperLeg = Parts.LeftUpperLeg,
-        LeftLowerLeg = Parts.LeftLowerLeg,
-        LeftFoot = Parts.LeftFoot,
-        RightUpperLeg = Parts.RightUpperLeg,
-        RightLowerLeg = Parts.RightLowerLeg,
-        RightFoot = Parts.RightFoot,
+		Head = findfirstchild(Character, "Head"),
+		Torso = findfirstchild(Character, "Torso") or findfirstchild(Character, "UpperTorso"),
+		UpperTorso = findfirstchild(Character, "UpperTorso"),
+		LowerTorso = findfirstchild(Character, "LowerTorso"),
+		LeftArm = findfirstchild(Character, "Left Arm") or findfirstchild(Character, "LeftUpperArm"),
+		LeftLeg = findfirstchild(Character, "Left Leg") or findfirstchild(Character, "LeftUpperLeg"),
+		RightArm = findfirstchild(Character, "Right Arm") or findfirstchild(Character, "RightUpperArm"),
+		RightLeg = findfirstchild(Character, "Right Leg") or findfirstchild(Character, "RightUpperLeg"),
+		LeftUpperArm = findfirstchild(Character, "LeftUpperArm"),
+		LeftLowerArm = findfirstchild(Character, "LeftLowerArm"),
+		LeftHand = findfirstchild(Character, "LeftHand"),
+		RightUpperArm = findfirstchild(Character, "RightUpperArm"),
+		RightLowerArm = findfirstchild(Character, "RightLowerArm"),
+		RightHand = findfirstchild(Character, "RightHand"),
+		LeftUpperLeg = findfirstchild(Character, "LeftUpperLeg"),
+		LeftLowerLeg = findfirstchild(Character, "LeftLowerLeg"),
+		LeftFoot = findfirstchild(Character, "LeftFoot"),
+		RightUpperLeg = findfirstchild(Character, "RightUpperLeg"),
+		RightLowerLeg = findfirstchild(Character, "RightLowerLeg"),
+		RightFoot = findfirstchild(Character, "RightFoot"),
 		BodyHeightScale = 1,
-		RigType = findfirstchild(Model, "Torso") and 0 or 1,
+		RigType = findfirstchild(Character, "Torso") and 0 or 1,
 		Whitelisted = false,
 		Archenemies = false,
-		Aimbot_Part = Parts.Head,
-		Aimbot_TP_Part = Parts.Head,
-		Triggerbot_Part = Parts.Head,
+		Aimbot_Part = findfirstchild(Character, "Head"),
+		Aimbot_TP_Part = findfirstchild(Character, "Head"),
+		Triggerbot_Part = findfirstchild(Character, "Head"),
 		Health = Health,
 		MaxHealth = getmaxhealth(Humanoid),
 		body_parts_data = {
-			{ name = "LowerTorso", part = Parts.LowerTorso },
-			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
-			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
-			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
-			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
-			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
-			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
-			{ name = "RightUpperArm", part = Parts.RightUpperArm },
-			{ name = "RightLowerArm", part = Parts.RightLowerArm },
+			{ name = "LowerTorso", part = findfirstchild(Character, "LowerTorso") },
+			{ name = "LeftUpperLeg", part = findfirstchild(Character, "LeftUpperLeg") },
+			{ name = "LeftLowerLeg", part = findfirstchild(Character, "LeftLowerLeg") },
+			{ name = "RightUpperLeg", part = findfirstchild(Character, "RightUpperLeg") },
+			{ name = "RightLowerLeg", part = findfirstchild(Character, "RightLowerLeg") },
+			{ name = "LeftUpperArm", part = findfirstchild(Character, "LeftUpperArm") },
+			{ name = "LeftLowerArm", part = findfirstchild(Character, "LeftLowerArm") },
+			{ name = "RightUpperArm", part = findfirstchild(Character, "RightUpperArm") },
+			{ name = "RightLowerArm", part = findfirstchild(Character, "RightLowerArm") },
 		},
+
 		full_body_data = {
-			{ name = "Head", part = Parts.Head },
-			{ name = "UpperTorso", part = Parts.UpperTorso },
-			{ name = "LowerTorso", part = Parts.LowerTorso },
-			{ name = "HumanoidRootPart", part = Parts.HumanoidRootPart },
-		
-			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
-			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
-			{ name = "LeftHand", part = Parts.LeftHand },
-		
-			{ name = "RightUpperArm", part = Parts.RightUpperArm },
-			{ name = "RightLowerArm", part = Parts.RightLowerArm },
-			{ name = "RightHand", part = Parts.RightHand },
-		
-			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
-			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
-			{ name = "LeftFoot", part = Parts.LeftFoot },
-		
-			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
-			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
-			{ name = "RightFoot", part = Parts.RightFoot },
+			{ name = "Head", part = findfirstchild(Character, "Head") },
+			{ name = "UpperTorso", part = findfirstchild(Character, "UpperTorso") },
+			{ name = "LowerTorso", part = findfirstchild(Character, "LowerTorso") },
+			{ name = "HumanoidRootPart", part = findfirstchild(Character, "HumanoidRootPart") },
+
+			{ name = "LeftUpperArm", part = findfirstchild(Character, "LeftUpperArm") },
+			{ name = "LeftLowerArm", part = findfirstchild(Character, "LeftLowerArm") },
+			{ name = "LeftHand", part = findfirstchild(Character, "LeftHand") },
+
+			{ name = "RightUpperArm", part = findfirstchild(Character, "RightUpperArm") },
+			{ name = "RightLowerArm", part = findfirstchild(Character, "RightLowerArm") },
+			{ name = "RightHand", part = findfirstchild(Character, "RightHand") },
+
+			{ name = "LeftUpperLeg", part = findfirstchild(Character, "LeftUpperLeg") },
+			{ name = "LeftLowerLeg", part = findfirstchild(Character, "LeftLowerLeg") },
+			{ name = "LeftFoot", part = findfirstchild(Character, "LeftFoot") },
+
+			{ name = "RightUpperLeg", part = findfirstchild(Character, "RightUpperLeg") },
+			{ name = "RightLowerLeg", part = findfirstchild(Character, "RightLowerLeg") },
+			{ name = "RightFoot", part = findfirstchild(Character, "RightFoot") },
 		}
 	}
 
-	return tostring(Model), Data
-end
-
-local function LocalPlayerData()
-	local Camera = findfirstchild(Workspace, "Camera")
-	if not Camera then return end
-
-	local LocalData = {
-		LocalPlayer = Camera,
-		Character = Camera,
-		Username = tostring(Camera),
-		Displayname = getname(getlocalplayer()),
-		Userid = 1,
-		Team = Camera,
-		Tool = Camera,
-		Humanoid = Camera,
-		Health = 100,
-		MaxHealth = 100,
-		RigType = 1,
-
-		Head = Camera,
-		RootPart = Camera,
-		LeftFoot = Camera,
-		LowerTorso = Camera,
-	}
-
-	override_local_data(LocalData)
+	return tostring(Character), Data
 end
 
 local function Update()
-    local Containers = PIDtoContainer[PlaceID] or {Path}
-    local NPCPath = {}
     local Seen = {}
-
-    for _, Container in ipairs(Containers) do
-        local Entities = Container and getchildren(Container)
-        for _, Entity in ipairs(Entities) do
-            table.insert(NPCPath, Entity)
-        end
-    end
+    local NPCPath = getchildren(Games()[getgameid()]) or getchildren(Workspace)
 
     for _, NPC in ipairs(NPCPath) do
         local Humanoid = findfirstchildofclass(NPC, "Humanoid")
-
-        if Humanoid and getparent(Humanoid) then
+        
+        if Humanoid and getparent(Humanoid) and NPC ~= getcharacter(getlocalplayer()) then
             if is_team_check_active() then
                 continue
             end
 
             local Key = tostring(NPC)
-            local Parts = GetBodyParts(NPC)
+            local Parts = EntityParts(NPC)
 
-            if Parts.HumanoidRootPart and NPC ~= getcharacter(getlocalplayer()) then
-                if not TrackedModels[Key] then
-                    local ID, Data = NPCData(NPC, Parts)
+            if Parts.HumanoidRootPart then
+                if not Added[Key] then
+                    local ID, Data = EntityData(NPC, Parts)
                     if add_model_data(Data, ID) then
-                        TrackedModels[ID] = NPC
+                        Added[ID] = NPC
                     end
                 else
                     edit_model_data({Health = gethealth(Humanoid)}, Key)
                 end
-
+                
                 Seen[Key] = true
             end
         end
@@ -327,55 +249,39 @@ local function Update()
 	for _, Player in ipairs(getchildren(Players)) do
 		local Character = getcharacter(Player)
         local Humanoid = findfirstchildofclass(Character, "Humanoid")
-
-        if Character then
+        
+        if Character and Character ~= getcharacter(getlocalplayer()) then
             local Key = tostring(Character)
-            local Parts = GetBodyParts(Character)
+            local Parts = EntityParts(Character)
 
-            if Parts.HumanoidRootPart and Character ~= getcharacter(getlocalplayer()) then
-                if not TrackedModels[Key] then
-                    local ID, Data = PlayerData(Character, Parts)
+            if Parts.HumanoidRootPart then
+                if not Added[Key] then
+                    local ID, Data = PlayerData(Player, Parts)
                     if add_model_data(Data, ID) then
-                        TrackedModels[ID] = Character
+                        Added[ID] = Character
                     end
                 else
                     edit_model_data({Health = gethealth(Humanoid)}, Key)
                 end
-
+                
                 Seen[Key] = true
             end
         end
     end
 
-    for Key, Model in pairs(TrackedModels) do
+    for Key, Model in pairs(Added) do
         local HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
+        
         if not HumanoidRootPart or not Seen[Key] then
             remove_model_data(Key)
-            TrackedModels[Key] = nil
+            Added[Key] = nil
         end
     end
 end
 
 spawn(function()
     while true do
-		wait(1/60)
-		Update()
-
-        if not Peanut then
-            for UniverseID, Container in pairs(Universington()) do
-                UniverseCache(UniverseID, Container)
-            end
-			
-            UniverseCached = true
-        end
-
-		if not getcharacter(getlocalplayer()) then
-			local LocalID, LocalData = LocalPlayerData()
-            if LocalID and LocalData then
-                override_local_data(LocalData)
-            end
-		end
-	end
+        wait(1 / 60)
+        Update()
+    end
 end)
-
-SendNotification("Initialized for " .. GetPlaceName(PlaceID), "info")
