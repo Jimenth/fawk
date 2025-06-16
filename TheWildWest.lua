@@ -1,4 +1,4 @@
-local TrackedModels = {}
+local Added = {}
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local Entities = findfirstchild(Workspace, "WORKSPACE_Entities")
 local Players = findfirstchild(Entities, "Players")
@@ -246,7 +246,7 @@ local function LocalPlayerData()
         Humanoid = Humanoid,
         Health = Health,
         MaxHealth = getmaxhealth(Humanoid),
-        RigType = 0,
+        RigType = 1,
 
         Head = findfirstchild(LocalPlayer, "Head"),
         RootPart = findfirstchild(LocalPlayer, "HumanoidRootPart"),
@@ -273,10 +273,10 @@ local function Update()
 			local Parts = GetBodyParts(Player)
 
 			if Parts.Head and Parts.HumanoidRootPart and getname(Player) ~= getname(getlocalplayer()) then
-				if not TrackedModels[Key] then
+				if not Added[Key] then
 					local ID, Data = PlayerData(Player, Parts)
 					if add_model_data(Data, ID) then
-						TrackedModels[ID] = Player
+						Added[ID] = Player
 					end
 				else
 					edit_model_data({Health = gethealth(Humanoid)}, Key)
@@ -294,10 +294,10 @@ local function Update()
 				local Parts = GetAnimalParts(Animal)
 
 				if Parts.Head and Parts.HumanoidRootPart and not string.find(getname(Animal), "Horse") then
-					if not TrackedModels[Key] then
+					if not Added[Key] then
 						local ID, Data = AnimalData(Animal, Parts)
 						if add_model_data(Data, ID) then
-							TrackedModels[ID] = Animal
+							Added[ID] = Animal
 						end
 					else
 						edit_model_data({ Health = gethealth(Humanoid) }, Key)
@@ -308,11 +308,11 @@ local function Update()
 		end
 	end
 
-	for Key, Model in pairs(TrackedModels) do
+	for Key, Model in pairs(Added) do
 		local HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
 		if not HumanoidRootPart or not Seen[Key] then
 			remove_model_data(Key)
-			TrackedModels[Key] = nil
+			Added[Key] = nil
 		end
 	end
 end
@@ -322,8 +322,9 @@ spawn(function()
         wait(1/60)
         Update()
 
-        if LocalPlayerData() then
-            override_local_data(LocalPlayerData())
+        local LocalID, LocalData = LocalPlayerData()
+        if LocalID and LocalData then
+            override_local_data(LocalData)
         end
     end
 end)
