@@ -1,4 +1,4 @@
-local TrackedModels = {}
+local Added = {}
 local Workspace = findfirstchildofclass(Game, "Workspace")
 local GameFolder = findfirstchild(Workspace, "Game")
 local PlayersFolder = findfirstchild(GameFolder, "Players")
@@ -133,10 +133,10 @@ local function Update()
 					local Parts = GetBodyParts(Player)
 
 					if Parts.Head and Parts.HumanoidRootPart then
-						if not TrackedModels[Key] then
+						if not Added[Key] then
 							local ID, Data = PlayerData(Player, Parts)
 							if add_model_data(Data, ID) then
-								TrackedModels[ID] = Player
+								Added[ID] = Player
 							end
 						else
 							edit_model_data({ Health = getvalue(findfirstchild(Player, "Health")) }, Key)
@@ -148,11 +148,11 @@ local function Update()
 		end
 	end
 
-	for Key, Model in pairs(TrackedModels) do
+	for Key, Model in pairs(Added) do
 		local HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
 		if not HumanoidRootPart or not Seen[Key] then
 			remove_model_data(Key)
-			TrackedModels[Key] = nil
+			Added[Key] = nil
 		end
 	end
 end
