@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local TrackedModels = {}
+local Added = {}
 local Teamates = {}
 
 local function CalculateDistance(Position1, Position2)
@@ -210,10 +210,10 @@ local function Update()
 					else
 						local Parts = GetBodyParts(Player)
 						if Parts.Head and Parts.HumanoidRootPart then
-							if not TrackedModels[Key] then
+							if not Added[Key] then
 								local ID, Data = PlayerData(Player, Parts)
 								if add_model_data(Data, ID) then
-									TrackedModels[ID] = Player
+									Added[ID] = Player
 								end
 							end
 							
@@ -225,11 +225,11 @@ local function Update()
 	    end
 	end
 
-	for Key, Model in pairs(TrackedModels) do
+	for Key, Model in pairs(Added) do
 		local HumanoidRootPart = findfirstchild(Model, "root")
 		if not HumanoidRootPart or not Seen[Key] then
 			remove_model_data(Key)
-			TrackedModels[Key] = nil
+			Added[Key] = nil
 		end
 	end
 end
