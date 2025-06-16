@@ -1,5 +1,5 @@
 local Workspace = findfirstchildofclass(Game, "Workspace")
-local TrackedModels = {}
+local Added = {}
 
 local function GetLocalModel()
     LocalPlayer = findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
@@ -111,10 +111,10 @@ local function Update()
             end
             
             if Parts.Head and Parts.HumanoidRootPart and Enemy then
-                if not TrackedModels[Key] then
+                if not Added[Key] then
                     local ID, Data = PlayerData(Player, Parts)
                     if add_model_data(Data, ID) then
-                        TrackedModels[ID] = Player
+                        Added[ID] = Player
                     end
                 end
 
@@ -123,11 +123,11 @@ local function Update()
         end
     end
 
-    for Key, Model in pairs(TrackedModels) do
+    for Key, Model in pairs(Added) do
         local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
         if not HumanoidRootPart or not Seen[Key] then
             remove_model_data(Key)
-            TrackedModels[Key] = nil
+            Added[Key] = nil
         end
     end
 end
