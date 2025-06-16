@@ -23,6 +23,7 @@ local function Games()
 		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
 		[1003981402] = findfirstchild(Workspace, "Zombies"), -- Reminiscence Zombies
 		[3747388906] = getchildren(findfirstchild(Workspace, "Military")), -- Fallen Survival
+		[6907570572] = findfirstchild(findfirstchild(Workspace, "mainGame"), "active_anomaly"), -- A-888
 	}
 end
 
