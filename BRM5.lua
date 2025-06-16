@@ -1,4 +1,4 @@
-local TrackedModels = {}
+local Added = {}
 local Workspace = findfirstchildofclass(Game, "Workspace")
 
 local function IsPlayerModel(Model)
@@ -109,7 +109,7 @@ end
 local function Update()
 	local Descendants = getchildren(Workspace)
 	local Seen = {}
-	local GameID = getgameid()
+	local PlaceID = getplaceid()
 
 	for _, Object in ipairs(Descendants) do
 		if getclassname(Object) == "Model" and getname(Object) == "Male" then
@@ -117,14 +117,14 @@ local function Update()
 			local Parts = GetBodyParts(Object)
 
 			if Parts.Head and Parts.HumanoidRootPart then
-				if GameID == 1054526971 and IsPlayerModel(Object) then
+				if PlaceID == 3701546109 and IsPlayerModel(Object) then
 					continue
 				end
 
-				if not TrackedModels[Key] then
+				if not Added[Key] then
 					local ID, Data = PlayerData(Object, Parts)
 					if add_model_data(Data, ID) then
-						TrackedModels[ID] = Object
+						Added[ID] = Object
 					end
 				end
 				
@@ -133,11 +133,11 @@ local function Update()
 		end
 	end
 
-	for Key, Model in pairs(TrackedModels) do
+	for Key, Model in pairs(Added) do
 		local HumanoidRootPart = findfirstchild(Model, "Root")
 		if not HumanoidRootPart or not Seen[Key] then
 			remove_model_data(Key)
-			TrackedModels[Key] = nil
+			Added[Key] = nil
 		end
 	end
 end
