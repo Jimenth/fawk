@@ -5,6 +5,10 @@ local function IsPlayerModel(Model)
     return findfirstchild(Model, "BillboardGui")
 end
 
+local function IsZombieModel(Model)
+	return getname(Model) == "Zombie"
+end
+
 local function GetBodyParts(Model)
 	return {
 		Head = findfirstchild(Model, "Head"),
@@ -34,7 +38,7 @@ end
 local function PlayerData(Model, Parts)
 	local Data = {
 		Username = tostring(Model),
-		Displayname = IsPlayerModel(Model) and "Player" or "AI",
+		Displayname = IsPlayerModel(Model) and "Player" or IsZombieModel(Model) and "Zombie" or "AI",
 		Userid = IsPlayerModel(Model) and 0 or -1,
 		Character = Model,
 		PrimaryPart = Parts.Head,
@@ -112,7 +116,7 @@ local function Update()
 	local PlaceID = getplaceid()
 
 	for _, Object in ipairs(Descendants) do
-		if getclassname(Object) == "Model" and getname(Object) == "Male" then
+		if getclassname(Object) == "Model" and (getname(Object) == "Male" or (PlaceID == 4747446334 and (getname(Object) == "Zombie" or IsPlayerModel(Object)))) then
 			local Key = tostring(Object)
 			local Parts = GetBodyParts(Object)
 
@@ -127,7 +131,7 @@ local function Update()
 						Added[ID] = Object
 					end
 				end
-				
+
 				Seen[Key] = true
 			end
 		end
