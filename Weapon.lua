@@ -1,4 +1,4 @@
-local Settings = {
+local Settings = _G.Settings or {
     ['Box'] = {
         ['Enabled'] = true,
         ['Color'] = {255, 255, 255},
