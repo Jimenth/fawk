@@ -10,7 +10,7 @@ local function GetBodyParts(Model)
 		RightLeg = findfirstchild(Model, "right leg"),
 		LeftLeg = findfirstchild(Model, "left leg"),
 		Torso = findfirstchild(Model, "Torso"),
-		HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart")
+		HumanoidRootPart = findfirstchild(Model, "HumanoidRootPart") or getprimarypart(Model)
 	}
 end
 
@@ -23,7 +23,7 @@ local function PlayerData(Model, Parts)
 		Displayname = getname(Model),
 		Userid = 0,
 		Character = Model,
-		PrimaryPart = getprimarypart(Model),
+		PrimaryPart = getprimarypart(Model) or Parts.HumanoidRootPart,
 		Humanoid = Humanoid,
 		Head = Parts.Head,
         Torso = Parts.Torso,
@@ -95,7 +95,7 @@ end
 
 spawn(function()
 	while true do
-		wait(1/60)
+		wait(1/15)
 		Update()
 	end
 end)
