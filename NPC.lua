@@ -4,26 +4,62 @@ local Added = {}
 
 local function Games()
 	return {
-		[187796008] = findfirstchild(findfirstchild(Workspace, "Entities"), "Infected"), -- Those Who Remain
-		[3104101863] = findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies"), -- Michaels Zombies
-		[504035427] = findfirstchild(Workspace, "enemies"), -- Zombie Attack
-		[3349613241] = findfirstchild(Workspace, "NPCs"), -- AI Test
-		[1709832923] = findfirstchild(Workspace, "Zombies"), -- Zombie Uprising
-		[169302362] = findfirstchild(Workspace, "Baddies"), -- Project Lazarus
-		[3956073837] = findfirstchild(Workspace, "Zombies"), -- Korrupt Zombies
-		[2263267302] = findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce"), -- Infamy
-		[2575793677] = findfirstchild(Workspace, "OtherWaifus"), -- Aniphobia
-		[3766480386] = {findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1], "ZOMBIES")}, -- Call of Mini™ Zombies
-		[5497606909] = { -- Call of Mini™ Zombies 2
-			findfirstchild(getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1], "ZombiesSpawnedIn"),
-			getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1]
-		},
-		[3326279937] = findfirstchild(findfirstchild(Workspace, "NPCs"), "Custom"), -- Blackout Zombies
-		[1000233041] = findfirstchild(findfirstchild(findfirstchild(Workspace, "GameObjects"), "Physical"), "Employees"), -- SCP 3008
-		[5091490171] = findfirstchild(Workspace, "Bots"), -- Jailbird CO-OP
-		[1003981402] = findfirstchild(Workspace, "Zombies"), -- Reminiscence Zombies
-		[3747388906] = getchildren(findfirstchild(Workspace, "Military")), -- Fallen Survival
-		[6907570572] = findfirstchild(findfirstchild(Workspace, "mainGame"), "active_anomaly"), -- A-888
+		[187796008] = function()
+			return findfirstchild(findfirstchild(Workspace, "Entities"), "Infected")
+		end,
+		[3104101863] = function()
+			return findfirstchild(findfirstchild(Workspace, "Ignore"), "Zombies")
+		end,
+		[504035427] = function()
+			return findfirstchild(Workspace, "enemies")
+		end,
+		[3349613241] = function()
+			return findfirstchild(Workspace, "NPCs")
+		end,
+		[1709832923] = function()
+			return findfirstchild(Workspace, "Zombies")
+		end,
+		[169302362] = function()
+			return findfirstchild(Workspace, "Baddies")
+		end,
+		[3956073837] = function()
+			return findfirstchild(Workspace, "Zombies")
+		end,
+		[2263267302] = function()
+			return findfirstchild(findfirstchild(Workspace, "NPCs"), "policeForce")
+		end,
+		[2575793677] = function()
+			return findfirstchild(Workspace, "OtherWaifus")
+		end,
+		[3766480386] = function()
+			local Map = getchildren(findfirstchild(Workspace, "CURRENT MAP"))[1]
+			return { findfirstchild(Map, "ZOMBIES") }
+		end,
+		[5497606909] = function()
+			local Map = getchildren(findfirstchild(Workspace, "CURRENT_MAP"))[1]
+			return {
+				findfirstchild(Map, "ZombiesSpawnedIn"),
+				Map
+			}
+		end,
+		[3326279937] = function()
+			return findfirstchild(findfirstchild(Workspace, "NPCs"), "Custom")
+		end,
+		[1000233041] = function()
+			return findfirstchild(findfirstchild(findfirstchild(Workspace, "GameObjects"), "Physical"), "Employees")
+		end,
+		[5091490171] = function()
+			return findfirstchild(Workspace, "Bots")
+		end,
+		[1003981402] = function()
+			return findfirstchild(Workspace, "Zombies")
+		end,
+		[3747388906] = function()
+			return getchildren(findfirstchild(Workspace, "Military"))
+		end,
+		[6907570572] = function()
+			return findfirstchild(findfirstchild(Workspace, "mainGame"), "active_anomaly")
+		end,
 	}
 end
 
@@ -137,7 +173,7 @@ local function EntityData(Model, Parts)
 	return tostring(Model), Data
 end
 
-local function PlayerData(Player, Parts)
+local function PlayerData(Player)
 	local Character = getcharacter(Player)
 	local Humanoid = findfirstchildofclass(Character, "Humanoid")
 	local Health = gethealth(Humanoid)
@@ -219,7 +255,9 @@ end
 
 local function Update()
     local Seen = {}
-    local NPCPath = getchildren(Games()[getgameid()]) or getchildren(Workspace)
+    local Entry = Games()[getgameid()]
+    local Resolved = Entry and Entry()
+    local NPCPath = getchildren(Resolved) or getchildren(Workspace)
 
     for _, NPC in ipairs(NPCPath) do
         local Humanoid = findfirstchildofclass(NPC, "Humanoid")
@@ -257,7 +295,7 @@ local function Update()
 
             if Parts.HumanoidRootPart then
                 if not Added[Key] then
-                    local ID, Data = PlayerData(Player, Parts)
+                    local ID, Data = PlayerData(Player)
                     if add_model_data(Data, ID) then
                         Added[ID] = Character
                     end
