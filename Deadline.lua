@@ -1,43 +1,61 @@
-local Workspace = findfirstchildofclass(Game, "Workspace")
-local Added = {}
+local Module = {
+	Functions = {},
+	Added = {},
+}
+
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local GameStorage = {
+	Characters = Workspace:FindFirstChild("characters")
+}
 
 local function GetLocalModel()
-    LocalPlayer = findfirstchild(findfirstchild(Workspace, "characters"), "StarterCharacter")
+	if not GameStorage.Characters then return nil end
+
+    LocalPlayer = GameStorage.Characters:FindFirstChild("StarterCharacter")
     return LocalPlayer
 end
 
-local function TeamCheck(Entity)
-	local LocalPlayer = GetLocalModel()
+function Module.Functions.TeamCheck(Entity)
+	if not GameStorage.Characters then return nil end
+	if not Players.LocalPlayer then return nil end
 
-	if not LocalPlayer then
-		return nil
-	end
+	local LocalPlayer = GameStorage.Characters and GameStorage.Characters:FindFirstChild("StarterCharacter")
 
-	local Object = findfirstchild(findfirstchild(findfirstchild(Entity, "head"), "head"), "item")
-	local LocalObject = findfirstchild(findfirstchild(findfirstchild(LocalPlayer, "head"), "head"), "item")
+	if not LocalPlayer then return nil end
 
-    return getclassname(Object) == getclassname(LocalObject)
+	local Object = Entity:FindFirstChild("head")
+	Object = Object and Object:FindFirstChild("head")
+	Object = Object and Object:FindFirstChild("item")
+
+	local LocalObject = LocalPlayer:FindFirstChild("head")
+	LocalObject = LocalObject and LocalObject:FindFirstChild("head")
+	LocalObject = LocalObject and LocalObject:FindFirstChild("item")
+
+	if Object and LocalObject then return Object.ClassName == LocalObject.ClassName end
+
+	return false
 end
 
-local function GetBodyParts(Model)
+function Module.Functions.GetBodyParts(Model)
 	return {
-        Head = findfirstchild(Model, "head"),
-		LeftArm = findfirstchild(Model, "left_arm_vis"),
-		RightArm = findfirstchild(Model, "right_arm_vis"),
-		RightLeg = findfirstchild(Model, "right_leg_vis"),
-		LeftLeg = findfirstchild(Model, "left_leg_vis"),
-		Torso = findfirstchild(Model, "torso"),
-		HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
+		Head = Model:FindFirstChild("head"),
+		LeftArm = Model:FindFirstChild("left_arm_vis"),
+		RightArm = Model:FindFirstChild("right_arm_vis"),
+		RightLeg = Model:FindFirstChild("right_leg_vis"),
+		LeftLeg = Model:FindFirstChild("left_leg_vis"),
+		Torso = Model:FindFirstChild("torso"),
+		HumanoidRootPart = Model:FindFirstChild("humanoid_root_part")
 	}
 end
 
-local function PlayerData(Model, Parts)
+function Module.Functions.PlayerData(Model, Parts)
 	local Data = {
 		Username = tostring(Model),
 		Displayname = "Player",
 		Userid = 0,
 		Character = Model,
-		PrimaryPart = getprimarypart(Model),
+		PrimaryPart = Model.PrimaryPart,
 		Humanoid = Parts.HumanoidRootPart,
 		Head = Parts.Head,
         Torso = Parts.Torso,
@@ -59,24 +77,26 @@ local function PlayerData(Model, Parts)
 	return tostring(Model), Data
 end
 
-local function LocalPlayerData()
+function Module.Functions.LocalPlayerData()
+	if not Players.LocalPlayer then return nil end 
+
 	local LocalPlayer = GetLocalModel()
 
 	if not LocalPlayer then
 		return nil
 	end
 
-	local Parts = GetBodyParts(LocalPlayer)
+	local Parts = Module.Functions.GetBodyParts(LocalPlayer)
 
 	local LocalData = {
 		LocalPlayer = LocalPlayer,
 		Character = LocalPlayer,
 		Username = tostring(LocalPlayer),
-		Displayname = getname(getlocalplayer()),
+		Displayname = Players.LocalPlayer.Name,
 		Userid = 1,
 		Team = nil,
 		Tool = nil,
-		Humanoid = findfirstchild(LocalPlayer, "humanoid_root_part"),
+		Humanoid = LocalPlayer:FindFirstChild("humanoid_root_part"),
 		Health = 100,
 		MaxHealth = 100,
 		RigType = 0,
@@ -96,48 +116,45 @@ local function LocalPlayerData()
 	return tostring(LocalPlayer), LocalData
 end
 
-local function Update()
-    local Descendants = getchildren(findfirstchild(Workspace, "characters"))
-    local Seen = {}
+function Module.Functions.Update()
+	if not GameStorage.Characters then return end
 
-    for _, Player in ipairs(Descendants) do
-        if getname(Player) ~= "StarterCharacter" then
-            local Key = tostring(Player)
-            local Parts = GetBodyParts(Player)
-            local Enemy = true
+	local Descendants = GameStorage.Characters:GetChildren()
+	local Seen = {}
 
-            if is_team_check_active() then
-                Enemy = not TeamCheck(Player)
-            end
-            
-            if Parts.Head and Parts.HumanoidRootPart and Enemy then
-                if not Added[Key] then
-                    local ID, Data = PlayerData(Player, Parts)
-                    if add_model_data(Data, ID) then
-                        Added[ID] = Player
-                    end
-                end
+	for _, Player in ipairs(Descendants) do
+		if Player.Name ~= "StarterCharacter" then
+			local Key = tostring(Player)
+			local Parts = Module.Functions.GetBodyParts(Player)
+			local Enemy = not Module.Functions.TeamCheck(Player)
 
-                Seen[Key] = true
-            end
-        end
-    end
+			if Parts.Head and Parts.HumanoidRootPart and Enemy then
+				if not Module.Added[Key] then
+					local ID, Data = Module.Functions.PlayerData(Player, Parts)
+					if add_model_data(Data, ID) then
+						Module.Added[ID] = Player
+					end
+				end
 
-    for Key, Model in pairs(Added) do
-        local HumanoidRootPart = findfirstchild(Model, "humanoid_root_part")
-        if not HumanoidRootPart or not Seen[Key] then
-            remove_model_data(Key)
-            Added[Key] = nil
-        end
-    end
+				Seen[Key] = true
+			end
+		end
+	end
+
+	for Key, Model in pairs(Module.Added) do
+		local HumanoidRootPart = Model:FindFirstChild("humanoid_root_part")
+		if not HumanoidRootPart or not Seen[Key] then
+			remove_model_data(Key)
+			Module.Added[Key] = nil
+		end
+	end
 end
 
-spawn(function()
-    while true do
-        wait(1/30)
-        Update()
+task.spawn(function()
+    while task.wait(1/30) do
+        Module.Functions.Update()
 
-		local LocalID, LocalData = LocalPlayerData()
+		local LocalID, LocalData = Module.Functions.LocalPlayerData()
         if LocalID and LocalData then
             override_local_data(LocalData)
         end
