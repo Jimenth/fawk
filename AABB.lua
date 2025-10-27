@@ -1,5 +1,3 @@
--- AABB.lua
-
 local Module = {}
 
 function Module.GetAABB(Model, Method)
