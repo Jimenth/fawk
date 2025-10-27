@@ -62,3 +62,7 @@ local function GetAABB(Model, Method)
 		Size = Vector2.new(MaxX - MinX, MaxY - MinY)
 	}
 end
+
+return {
+	GetAABB = GetAABB
+}
