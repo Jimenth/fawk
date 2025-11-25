@@ -279,9 +279,7 @@ local function Update()
 		end
 	end)
 
-	if not Path or #Path == 0 then
-		Path = Workspace:GetChildren()
-	end
+	if not Path or #Path == 0 then Path = Workspace:GetChildren() end
 
 	for _, NPC in ipairs(Path) do
 		pcall(function()
@@ -294,7 +292,7 @@ local function Update()
 					if Parts and Parts.HumanoidRootPart then
 						if not Cache[Key] then
 							local ID, Data = EntityData(NPC, Parts)
-							if ID and Data and add_model_data and add_model_data(Data, ID) then
+							if ID and Data and add_model_data(Data, ID) then
 								Cache[ID] = NPC
 							end
 						else
@@ -322,11 +320,8 @@ local function Update()
                     local Parts = EntityParts(Character)
 
                     if Parts and Parts.HumanoidRootPart then
-                        local PlayerTeam = Player.Team
-                        local LocalTeam = Players.LocalPlayer.Team
-                    
                         if Teamcheck then
-                            if PlayerTeam == LocalTeam then
+                            if Player.Team == Players.LocalPlayer.Team then
                                 if Cache[Key] then
                                     local ID = tostring(Character)
                                     remove_model_data(ID)
