@@ -18,12 +18,13 @@ local Games = {
 	[33054943] = Workspace:FindFirstChild("Bots"), -- // Jailbird
 	[2652656] = Workspace:FindFirstChild("Zombies"), -- // Reminiscence Zombies
 	[93693150] = Workspace:FindFirstChild("mainGame") and Workspace:FindFirstChild("mainGame"):FindFirstChild("active_anomaly"), -- // A-888
+	[1066925] = Workspace:FindFirstChild("Zombies") -- // AR2
 }
 
 local function GetWeapon(Entity)
     for _, Tool in ipairs(Entity:GetChildren()) do
         if Tool.ClassName == "Tool" then
-            return Tool.Name or "None"
+            return Tool.Name
         end
     end
 
@@ -35,7 +36,7 @@ local function GetWeapon(Entity)
                Model.Name ~= "Model" then
                
                 if Model:FindFirstChild("Muzzle") or Model:FindFirstChild("Handle") then
-                    return Model.Name or "None"
+                    return Model.Name
                 end
             end
         end
@@ -82,17 +83,21 @@ local function EntityData(Model, Parts)
     if not Model then return nil end 
 
 	local Humanoid = Model:FindFirstChildOfClass("Humanoid")
-    if not Humanoid then return nil end 
-
-	local Health = Humanoid.Health
+	local Health = 100
+	local MaxHealth = 100
+	
+	if Humanoid then
+		Health = Humanoid.Health
+		MaxHealth = Humanoid.MaxHealth
+	end
 
 	local Data = {
 		Username = tostring(Model),
 		Displayname = Model.Name,
 		Userid = -1,
 		Character = Model,
-		PrimaryPart = Model.PrimaryPart,
-		Humanoid = Humanoid,
+		PrimaryPart = Model.PrimaryPart or Parts.HumanoidRootPart,
+		Humanoid = Humanoid or Model.PrimaryPart,
 		Head = Parts.Head,
         Torso = Parts.Torso or Parts.UpperTorso,
         UpperTorso = Parts.UpperTorso,
@@ -115,7 +120,7 @@ local function EntityData(Model, Parts)
         RightFoot = Parts.RightFoot,
 		BodyHeightScale = 1,
 		RigType = Model:FindFirstChild("Torso") and 0 or 1,
-        Toolname = GetWeapon(Model) or "None",
+        Toolname = GetWeapon(Model),
         Teamname = "NPCs",
 		Whitelisted = false,
 		Archenemies = false,
@@ -123,7 +128,7 @@ local function EntityData(Model, Parts)
 		Aimbot_TP_Part = Parts.Head,
 		Triggerbot_Part = Parts.Head,
 		Health = Health,
-		MaxHealth = Humanoid.Health,
+		MaxHealth = MaxHealth,
 		body_parts_data = {
 			{ name = "LowerTorso", part = Parts.LowerTorso },
 			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
@@ -210,7 +215,7 @@ local function PlayerData(Player)
 
 		BodyHeightScale = 1,
 		RigType = Character:FindFirstChild("Torso") and 0 or 1,
-        Toolname = GetWeapon(Character) or "None",
+        Toolname = GetWeapon(Character),
         Teamname = Player.Team or "No Team",
 
 		Whitelisted = false,
@@ -283,25 +288,26 @@ local function Update()
 
 	for _, NPC in ipairs(Path) do
 		pcall(function()
-			if NPC and typeof(NPC) == "Instance" then
+			if NPC and typeof(NPC) == "Instance" and NPC ~= Players.LocalPlayer.Character then
+				local Weapon = GetWeapon(NPC)
 				local Humanoid = NPC:FindFirstChildOfClass("Humanoid")
-				if Humanoid and NPC ~= Players.LocalPlayer.Character then
-					local Key = tostring(NPC)
-					local Parts = EntityParts(NPC)
+				local Key = tostring(NPC)
+				local Parts = EntityParts(NPC)
 
-					if Parts and Parts.HumanoidRootPart then
-						if not Cache[Key] then
-							local ID, Data = EntityData(NPC, Parts)
-							if ID and Data and add_model_data(Data, ID) then
-								Cache[ID] = NPC
-							end
-						else
-							edit_model_data({Toolname = GetWeapon(NPC) or "None"}, Key)
+				if Parts and Parts.HumanoidRootPart then
+					if not Cache[Key] then
+						local ID, Data = EntityData(NPC, Parts)
+						if ID and Data and add_model_data(Data, ID) then
+							Cache[ID] = NPC
+						end
+					else
+						edit_model_data({Toolname = Weapon}, Key)
+						if Humanoid then
 							edit_model_data({Health = Humanoid.Health}, Key)
 						end
-
-						Seen[Key] = true
 					end
+
+					Seen[Key] = true
 				end
 			end
 		end)
@@ -316,6 +322,7 @@ local function Update()
                 local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
                 if Humanoid and Character ~= Players.LocalPlayer.Character then
+				    local Weapon = GetWeapon(Character)
                     local Key = tostring(Character)
                     local Parts = EntityParts(Character)
 
@@ -335,7 +342,7 @@ local function Update()
                                         Cache[ID] = Character
                                     end
                                 else
-                                    edit_model_data({Toolname = GetWeapon(Character) or "None"}, Key)
+                                    edit_model_data({Toolname = Weapon}, Key)
                                     edit_model_data({Health = Humanoid.Health}, Key)
                                 end
                                 Seen[Key] = true
@@ -347,7 +354,7 @@ local function Update()
                                    Cache[ID] = Character
                                 end
                             else
-                                edit_model_data({Toolname = GetWeapon(Character) or "None"}, Key)
+                                edit_model_data({Toolname = Weapon}, Key)
                                 edit_model_data({Health = Humanoid.Health}, Key)
                             end
                             Seen[Key] = true
