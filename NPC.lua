@@ -18,7 +18,8 @@ local Games = {
 	[33054943] = Workspace:FindFirstChild("Bots"), -- // Jailbird
 	[2652656] = Workspace:FindFirstChild("Zombies"), -- // Reminiscence Zombies
 	[93693150] = Workspace:FindFirstChild("mainGame") and Workspace:FindFirstChild("mainGame"):FindFirstChild("active_anomaly"), -- // A-888
-	[1066925] = Workspace:FindFirstChild("Zombies") -- // AR2
+	[1066925] = Workspace:FindFirstChild("Zombies"), -- // AR2
+	[35229570] = Workspace:FindFirstChild("Zombies") -- // Survive Wave Z
 }
 
 local function GetWeapon(Entity)
