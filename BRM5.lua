@@ -156,37 +156,58 @@ local function Update()
     local Seen = {}
 
     for _, Object in ipairs(Workspace:GetChildren()) do
-        if Object.ClassName == "Model" and (Object.Name == "Male" or (PlaceID == Places["Zombies"] and (Object.Name == "Zombie" or IsPlayerModel(Object)))) then
-            local Key = tostring(Object)
-            local Parts = GetBodyParts(Object)
+        pcall(function()
+            if not Object then return end
+            
+            if Object.ClassName == "Model" and (Object.Name == "Male" or (PlaceID == Places["Zombies"] and (Object.Name == "Zombie" or IsPlayerModel(Object)))) then
+                local Key = tostring(Object)
+                if not Key then return end
+                
+                local Parts = GetBodyParts(Object)
 
-            if Parts and Parts.Head and Parts.HumanoidRootPart then
-                if PlaceID ~= Places["Zombies"] and ClosestPlayer and Object == ClosestPlayer then continue end
+                if Parts and Parts.Head and Parts.HumanoidRootPart then
+                    if PlaceID ~= Places["Zombies"] and ClosestPlayer and Object == ClosestPlayer then return end
 
-                if not Added[Key] then
-                    local ID, Data = PlayerData(Object, Parts)
-
-                    if ID and Data then
-                        if add_model_data(Data, ID) then
-                            Added[ID] = Object
+                    if not Added[Key] then
+                        local success2, ID, Data = pcall(function()
+                            return PlayerData(Object, Parts)
+                        end)
+                        
+                        if success2 and ID and Data then
+                            local success3, result = pcall(function()
+                                return add_model_data(Data, ID)
+                            end)
+                            
+                            if success3 and result then
+                                Added[ID] = Object
+                            end
                         end
-                    else
-                        continue
                     end
-                end
 
-                Seen[Key] = true
+                    Seen[Key] = true
+                end
             end
-        end
+        end)
     end
 
     for Key, Model in pairs(Added) do
-        local HumanoidRootPart = Model:FindFirstChild("Root")
-        
-        if not HumanoidRootPart or not Seen[Key] then
-            remove_model_data(Key)
-            Added[Key] = nil
-        end
+        pcall(function()
+            if not Model then
+                remove_model_data(Key)
+                Added[Key] = nil
+                return
+            end
+            
+            local success, HumanoidRootPart = pcall(function() return Model:FindFirstChild("Root") end)
+            
+            if not success then HumanoidRootPart = nil end
+            
+            if not HumanoidRootPart or not Seen[Key] then
+                pcall(function() remove_model_data(Key) end)
+                
+                Added[Key] = nil
+            end
+        end)
     end
 end
 
