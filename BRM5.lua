@@ -12,7 +12,7 @@ local Places = {
 }
 
 local function IsPlayerModel(Model)
-    if PlaceID == Places["2V2"] or PlaceID == Places["5V5"] or PlaceID == Places["Ranked"] then return true end
+    if PlaceID == Places["2V2"] or PlaceID == Places["5V5"] or PlaceID == Places["Ranked"] then return false end
     return Model:FindFirstChild("BillboardGui") ~= nil
 end
 
