@@ -19,7 +19,8 @@ local Games = {
 	[2652656] = Workspace:FindFirstChild("Zombies"), -- // Reminiscence Zombies
 	[93693150] = Workspace:FindFirstChild("mainGame") and Workspace:FindFirstChild("mainGame"):FindFirstChild("active_anomaly"), -- // A-888
 	[1066925] = Workspace:FindFirstChild("Zombies"), -- // AR2
-	[35229570] = Workspace:FindFirstChild("Zombies") -- // Survive Wave Z
+	[35229570] = Workspace:FindFirstChild("Zombies"), -- // Survive Wave Z
+	[29761878] = Workspace, -- // The Rake Remastered
 }
 
 local function GetWeapon(Entity)
@@ -272,8 +273,8 @@ local function Update()
 	if not Games or not GameID or not Players or not Cache then return end
 
 	local Seen = {}
-	local Entry = Games[GameID]
-	if not Entry then return end
+	local Entry = Games[GameID] or Workspace
+	if not Entry then Entry = Workspace end
 
 	local Path
 
