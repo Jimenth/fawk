@@ -21,6 +21,8 @@ local Games = {
 	[1066925] = Workspace:FindFirstChild("Zombies"), -- // AR2
 	[35229570] = Workspace:FindFirstChild("Zombies"), -- // Survive Wave Z
 	[29761878] = Workspace, -- // The Rake Remastered
+	[1070403] = Workspace:FindFirstChild("NPCs"), -- // Identity Fraud
+	[35794027] = Workspace:FindFirstChild("Bots"), -- // Da Track
 }
 
 local function GetWeapon(Entity)
@@ -269,24 +271,39 @@ local function PlayerData(Player)
 	return tostring(Character), Data
 end
 
+local function ScanPath()
+	if Games[GameID] then
+		return Games[GameID], false
+	end
+	
+	local F1 = Workspace:FindFirstChild("Bots") if F1 and #F1:GetChildren() > 0 then return F1, false end
+	local F2 = Workspace:FindFirstChild("NPCs") if F2 and #F2:GetChildren() > 0 then return F2, false end
+	local F3 = Workspace:FindFirstChild("Zombies") if F3 and #F3:GetChildren() > 0 then return F3, false end
+	return Workspace, true
+end
+
 local function Update()
 	if not Games or not GameID or not Players or not Cache then return end
 
 	local Seen = {}
-	local Entry = Games[GameID] or Workspace
+	local Entry, UseDescendants = ScanPath()
 	if not Entry then Entry = Workspace end
 
 	local Path
 
 	pcall(function()
 		if typeof(Entry) == "Instance" then
-			Path = Entry:GetChildren()
+			if UseDescendants then
+				Path = Entry:GetDescendants()
+			else
+				Path = Entry:GetChildren()
+			end
 		elseif typeof(Entry) == "table" then
 			Path = Entry
 		end
 	end)
 
-	if not Path or #Path == 0 then Path = Workspace:GetChildren() end
+	if not Path or #Path == 0 then Path = Workspace:GetDescendants() end
 
 	for _, NPC in ipairs(Path) do
 		pcall(function()
@@ -385,7 +402,7 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(1 / 30)
+        task.wait(1 / 15)
         Update()
     end
 end)
