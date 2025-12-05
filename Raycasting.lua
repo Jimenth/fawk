@@ -3,6 +3,8 @@
 local Raycast = {}
 Raycast.__index = Raycast
 
+local Workspace = game:GetService("Workspace")
+
 local CachedParts = {}
 local LastCacheTime = 0
 local CacheInterval = 5
@@ -89,8 +91,8 @@ local function UpdatePartCache()
     CachedParts = {}
     LastCacheTime = CurrentTime
     
-    if workspace then
-        local Descendants = workspace:GetDescendants()
+    if Workspace then
+        local Descendants = Workspace:GetDescendants()
         for _, Obj in pairs(Descendants) do
             if Obj and Obj.Size and Obj.CFrame then
                 table.insert(CachedParts, Obj)
