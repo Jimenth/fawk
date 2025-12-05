@@ -87,7 +87,7 @@ local function UpdatePartCache()
     LastCacheTime = CurrentTime
     
     if workspace then
-        local Descendants = workspace:GetDescendants()
+        local Descendants = workspace.GetDescendants(workspace)
         for _, Obj in pairs(Descendants) do
             if Obj and Obj.Size and Obj.CFrame then
                 table.insert(CachedParts, Obj)
