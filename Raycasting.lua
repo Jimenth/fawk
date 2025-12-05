@@ -77,6 +77,9 @@ local function RenderRayVisualization()
     )
 end
 
+-- Connect render function to RunService
+RunService.Render:Connect(RenderRayVisualization)
+
 local function UpdatePartCache()
     local CurrentTime = os.time()
     if CurrentTime - LastCacheTime < CacheInterval then
