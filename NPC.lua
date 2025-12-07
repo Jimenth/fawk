@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local GameID = game.GameId
 
 local Cache = {}
+
 local Games = {
 	[2838077] = Workspace:FindFirstChild("Entities") and Workspace:FindFirstChild("Entities"):FindFirstChild("Infected"), -- // Those Who Remain
 	[12527656] = Workspace:FindFirstChild("Ignore") and Workspace:FindFirstChild("Ignore"):FindFirstChild("Zombies"), -- // Michael's Zombies
@@ -26,31 +27,31 @@ local Games = {
 }
 
 local function GetWeapon(Entity)
-    for _, Tool in ipairs(Entity:GetChildren()) do
-        if Tool.ClassName == "Tool" then
-            return Tool.Name
-        end
-    end
+	for _, Tool in ipairs(Entity:GetChildren()) do
+		if Tool.ClassName == "Tool" then
+			return Tool.Name
+		end
+	end
 
-    for _, Model in ipairs(Entity:GetChildren()) do
-        if Model and Model.ClassName == "Model" then
-            if Model.ClassName ~= "Hat" and Model.ClassName ~= "Accessory" and 
-               Model.Name ~= "Hair" and Model.Name ~= "GunModel" and 
-               Model.Name:sub(1, 5) ~= "Armor" and Model.Name ~= "HolsterModel" and 
-               Model.Name ~= "Model" then
-               
-                if Model:FindFirstChild("Muzzle") or Model:FindFirstChild("Handle") then
-                    return Model.Name
-                end
-            end
-        end
-    end
+	for _, Model in ipairs(Entity:GetChildren()) do
+		if Model and Model.ClassName == "Model" then
+			if Model.ClassName ~= "Hat" and Model.ClassName ~= "Accessory" and 
+			   Model.Name ~= "Hair" and Model.Name ~= "GunModel" and 
+			   Model.Name:sub(1, 5) ~= "Armor" and Model.Name ~= "HolsterModel" and 
+			   Model.Name ~= "Model" then
+			   
+				if Model:FindFirstChild("Muzzle") or Model:FindFirstChild("Handle") then
+					return Model.Name
+				end
+			end
+		end
+	end
 
-    return "None"
+	return "None"
 end
 
-local function EntityParts(Model)
-    if not Model then return nil end 
+local function GetEntityParts(Model)
+	if not Model then return nil end 
 
 	return {
 		Head = Model:FindFirstChild("Head"),
@@ -79,12 +80,12 @@ local function EntityParts(Model)
 		RightArm = Model:FindFirstChild("Right Arm") or Model:FindFirstChild("RightArm"),
 		Torso = Model:FindFirstChild("Torso") or Model:FindFirstChild("Body"),
 
-		HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart"),
+		HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart") or Model:FindFirstChild("Root"),
 	}
 end
 
-local function EntityData(Model, Parts)
-    if not Model then return nil end 
+local function GetEntityData(Model, Parts)
+	if not Model then return nil end 
 
 	local Humanoid = Model:FindFirstChildOfClass("Humanoid")
 	local Health = 100
@@ -103,29 +104,29 @@ local function EntityData(Model, Parts)
 		PrimaryPart = Model.PrimaryPart or Parts.HumanoidRootPart,
 		Humanoid = Humanoid or Model.PrimaryPart,
 		Head = Parts.Head,
-        Torso = Parts.Torso or Parts.UpperTorso,
-        UpperTorso = Parts.UpperTorso,
-        LowerTorso = Parts.LowerTorso,
-        LeftArm = Parts.LeftArm or Parts.LeftUpperArm, 
+		Torso = Parts.Torso or Parts.UpperTorso,
+		UpperTorso = Parts.UpperTorso,
+		LowerTorso = Parts.LowerTorso,
+		LeftArm = Parts.LeftArm or Parts.LeftUpperArm, 
 		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
-        RightArm = Parts.RightArm or Parts.RightUpperArm, 
+		RightArm = Parts.RightArm or Parts.RightUpperArm, 
 		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
-        LeftUpperArm = Parts.LeftUpperArm,
-        LeftLowerArm = Parts.LeftLowerArm,
-        LeftHand = Parts.LeftHand,
-        RightUpperArm = Parts.RightUpperArm,
-        RightLowerArm = Parts.RightLowerArm,
-        RightHand = Parts.RightHand,
-        LeftUpperLeg = Parts.LeftUpperLeg,
-        LeftLowerLeg = Parts.LeftLowerLeg,
-        LeftFoot = Parts.LeftFoot,
-        RightUpperLeg = Parts.RightUpperLeg,
-        RightLowerLeg = Parts.RightLowerLeg,
-        RightFoot = Parts.RightFoot,
+		LeftUpperArm = Parts.LeftUpperArm,
+		LeftLowerArm = Parts.LeftLowerArm,
+		LeftHand = Parts.LeftHand,
+		RightUpperArm = Parts.RightUpperArm,
+		RightLowerArm = Parts.RightLowerArm,
+		RightHand = Parts.RightHand,
+		LeftUpperLeg = Parts.LeftUpperLeg,
+		LeftLowerLeg = Parts.LeftLowerLeg,
+		LeftFoot = Parts.LeftFoot,
+		RightUpperLeg = Parts.RightUpperLeg,
+		RightLowerLeg = Parts.RightLowerLeg,
+		RightFoot = Parts.RightFoot,
 		BodyHeightScale = 1,
 		RigType = Model:FindFirstChild("Torso") and 0 or 1,
-        Toolname = GetWeapon(Model),
-        Teamname = "NPCs",
+		Toolname = GetWeapon(Model),
+		Teamname = "NPCs",
 		Whitelisted = false,
 		Archenemies = false,
 		Aimbot_Part = Parts.Head,
@@ -171,16 +172,20 @@ local function EntityData(Model, Parts)
 	return tostring(Model), Data
 end
 
-local function PlayerData(Player)
+local function GetPlayerData(Player)
 	if not Player then return nil end
 
 	local Character = Player.Character
-    if not Character then return nil end
+	if not Character then return nil end
 
 	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    if not Humanoid then return nil end
+	if not Humanoid then return nil end
 
-	local Health = Humanoid and Humanoid.Health or 0
+	local Parts = GetEntityParts(Character)
+	if not Parts then return nil end
+
+	local Health = Humanoid.Health
+	local MaxHealth = Humanoid.MaxHealth
 
 	local Data = {
 		Username = Player.Name,
@@ -191,46 +196,46 @@ local function PlayerData(Player)
 		PrimaryPart = Character.PrimaryPart,
 		Humanoid = Humanoid,
 
-		Head = Character:FindFirstChild("Head"),
-		Torso = Character:FindFirstChild("Torso") or Character:FindFirstChild("UpperTorso"),
-		UpperTorso = Character:FindFirstChild("UpperTorso"),
-		LowerTorso = Character:FindFirstChild("LowerTorso"),
+		Head = Parts.Head,
+		Torso = Parts.Torso or Parts.UpperTorso,
+		UpperTorso = Parts.UpperTorso,
+		LowerTorso = Parts.LowerTorso,
 
-		LeftArm = Character:FindFirstChild("Left Arm") or Character:FindFirstChild("LeftUpperArm"),
-		LeftLeg = Character:FindFirstChild("Left Leg") or Character:FindFirstChild("LeftUpperLeg"),
-		RightArm = Character:FindFirstChild("Right Arm") or Character:FindFirstChild("RightUpperArm"),
-		RightLeg = Character:FindFirstChild("Right Leg") or Character:FindFirstChild("RightUpperLeg"),
+		LeftArm = Parts.LeftArm or Parts.LeftUpperArm,
+		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
+		RightArm = Parts.RightArm or Parts.RightUpperArm,
+		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
 
-		LeftUpperArm = Character:FindFirstChild("LeftUpperArm"),
-		LeftLowerArm = Character:FindFirstChild("LeftLowerArm"),
-		LeftHand = Character:FindFirstChild("LeftHand"),
+		LeftUpperArm = Parts.LeftUpperArm,
+		LeftLowerArm = Parts.LeftLowerArm,
+		LeftHand = Parts.LeftHand,
 
-		RightUpperArm = Character:FindFirstChild("RightUpperArm"),
-		RightLowerArm = Character:FindFirstChild("RightLowerArm"),
-		RightHand = Character:FindFirstChild("RightHand"),
+		RightUpperArm = Parts.RightUpperArm,
+		RightLowerArm = Parts.RightLowerArm,
+		RightHand = Parts.RightHand,
 
-		LeftUpperLeg = Character:FindFirstChild("LeftUpperLeg"),
-		LeftLowerLeg = Character:FindFirstChild("LeftLowerLeg"),
-		LeftFoot = Character:FindFirstChild("LeftFoot"),
+		LeftUpperLeg = Parts.LeftUpperLeg,
+		LeftLowerLeg = Parts.LeftLowerLeg,
+		LeftFoot = Parts.LeftFoot,
 
-		RightUpperLeg = Character:FindFirstChild("RightUpperLeg"),
-		RightLowerLeg = Character:FindFirstChild("RightLowerLeg"),
-		RightFoot = Character:FindFirstChild("RightFoot"),
+		RightUpperLeg = Parts.RightUpperLeg,
+		RightLowerLeg = Parts.RightLowerLeg,
+		RightFoot = Parts.RightFoot,
 
 		BodyHeightScale = 1,
 		RigType = Character:FindFirstChild("Torso") and 0 or 1,
-        Toolname = GetWeapon(Character),
-        Teamname = Player.Team or "No Team",
+		Toolname = GetWeapon(Character),
+		Teamname = Player.Team or "No Team",
 
 		Whitelisted = false,
 		Archenemies = false,
 
-		Aimbot_Part = Character:FindFirstChild("Head"),
-		Aimbot_TP_Part = Character:FindFirstChild("Head"),
-		Triggerbot_Part = Character:FindFirstChild("Head"),
+		Aimbot_Part = Parts.Head,
+		Aimbot_TP_Part = Parts.Head,
+		Triggerbot_Part = Parts.Head,
 
 		Health = Health,
-		MaxHealth = Humanoid and Humanoid.MaxHealth or 0,
+		MaxHealth = MaxHealth,
 
 		body_parts_data = {
 			{ name = "LowerTorso", part = Character:FindFirstChild("LowerTorso") },
@@ -271,29 +276,40 @@ local function PlayerData(Player)
 	return tostring(Character), Data
 end
 
-local function ScanPath()
+local function GetScanPath()
 	if Games[GameID] then
 		return Games[GameID], false
 	end
 	
-	local F1 = Workspace:FindFirstChild("Bots") if F1 and #F1:GetChildren() > 0 then return F1, false end
-	local F2 = Workspace:FindFirstChild("NPCs") if F2 and #F2:GetChildren() > 0 then return F2, false end
-	local F3 = Workspace:FindFirstChild("Zombies") if F3 and #F3:GetChildren() > 0 then return F3, false end
+	local Bots = Workspace:FindFirstChild("Bots")
+	if Bots and #Bots:GetChildren() > 0 then return Bots, false end
+	
+	local NPCs = Workspace:FindFirstChild("NPCs")
+	if NPCs and #NPCs:GetChildren() > 0 then return NPCs, false end
+	
+	local Zombies = Workspace:FindFirstChild("Zombies")
+	if Zombies and #Zombies:GetChildren() > 0 then return Zombies, false end
+	
 	return Workspace, true
 end
 
-local function Update()
+RunService.PostLocal:Connect(function()
 	if not Games or not GameID or not Players or not Cache then return end
 
+	local LocalPlayer = Players.LocalPlayer
+	if not LocalPlayer then return end
+
+	local LocalCharacter = LocalPlayer.Character
+
 	local Seen = {}
-	local Entry, UseDescendants = ScanPath()
+	local Entry, Descendants = GetScanPath()
 	if not Entry then Entry = Workspace end
 
 	local Path
 
 	pcall(function()
 		if typeof(Entry) == "Instance" then
-			if UseDescendants then
+			if Descendants then
 				Path = Entry:GetDescendants()
 			else
 				Path = Entry:GetChildren()
@@ -307,22 +323,22 @@ local function Update()
 
 	for _, NPC in ipairs(Path) do
 		pcall(function()
-			if NPC and typeof(NPC) == "Instance" and NPC ~= Players.LocalPlayer.Character then
+			if NPC and typeof(NPC) == "Instance" and NPC ~= LocalCharacter then
 				local Weapon = GetWeapon(NPC)
 				local Humanoid = NPC:FindFirstChildOfClass("Humanoid")
 				local Key = tostring(NPC)
-				local Parts = EntityParts(NPC)
+				local Parts = GetEntityParts(NPC)
 
 				if Parts and Parts.HumanoidRootPart then
 					if not Cache[Key] then
-						local ID, Data = EntityData(NPC, Parts)
+						local ID, Data = GetEntityData(NPC, Parts)
 						if ID and Data and add_model_data(Data, ID) then
 							Cache[ID] = NPC
 						end
 					else
-						edit_model_data({Toolname = Weapon}, Key)
+						edit_model_data({ Toolname = Weapon }, Key)
 						if Humanoid then
-							edit_model_data({Health = Humanoid.Health}, Key)
+							edit_model_data({ Health = Humanoid.Health }, Key)
 						end
 					end
 
@@ -332,77 +348,71 @@ local function Update()
 		end)
 	end
 
-    for _, Player in ipairs(Players:GetChildren()) do
-        local Teamcheck = is_team_check_active()
+	for _, Player in ipairs(Players:GetChildren()) do
+		local TeamCheck = is_team_check_active()
 
-        pcall(function()
-            if Player and Player ~= Players.LocalPlayer then
-                local Character = Player.Character
-                local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+		pcall(function()
+			if Player and Player ~= LocalPlayer then
+				local Character = Player.Character
+				local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
-                if Humanoid and Character ~= Players.LocalPlayer.Character then
-				    local Weapon = GetWeapon(Character)
-                    local Key = tostring(Character)
-                    local Parts = EntityParts(Character)
+				if Humanoid and Character ~= LocalCharacter then
+					local Weapon = GetWeapon(Character)
+					local Key = tostring(Character)
+					local Parts = GetEntityParts(Character)
 
-                    if Parts and Parts.HumanoidRootPart then
-                        if Teamcheck then
-                            if Player.Team == Players.LocalPlayer.Team then
-                                if Cache[Key] then
-                                    local ID = tostring(Character)
-                                    remove_model_data(ID)
-                                    Cache[ID] = nil
-                                end
-                                Seen[Key] = nil
-                            else
-                                if not Cache[Key] then
-                                    local ID, Data = PlayerData(Player)
-                                    if ID and Data and add_model_data(Data, ID) then
-                                        Cache[ID] = Character
-                                    end
-                                else
-                                    edit_model_data({Toolname = Weapon}, Key)
-                                    edit_model_data({Health = Humanoid.Health}, Key)
-                                end
-                                Seen[Key] = true
-                            end
-                        else
-                            if not Cache[Key] then
-                                local ID, Data = PlayerData(Player)
-                                if ID and Data and add_model_data(Data, ID) then
-                                   Cache[ID] = Character
-                                end
-                            else
-                                edit_model_data({Toolname = Weapon}, Key)
-                                edit_model_data({Health = Humanoid.Health}, Key)
-                            end
-                            Seen[Key] = true
-                        end
-                    end
-                end
-            end
-        end)
-    end
+					if Parts and Parts.HumanoidRootPart then
+						if TeamCheck then
+							if Player.Team == LocalPlayer.Team then
+								if Cache[Key] then
+									local ID = tostring(Character)
+									remove_model_data(ID)
+									Cache[ID] = nil
+								end
+								Seen[Key] = nil
+							else
+								if not Cache[Key] then
+									local ID, Data = GetPlayerData(Player)
+									if ID and Data and add_model_data(Data, ID) then
+										Cache[ID] = Character
+									end
+								else
+									edit_model_data({ Toolname = Weapon }, Key)
+									edit_model_data({ Health = Humanoid.Health }, Key)
+								end
+								Seen[Key] = true
+							end
+						else
+							if not Cache[Key] then
+								local ID, Data = GetPlayerData(Player)
+								if ID and Data and add_model_data(Data, ID) then
+								   Cache[ID] = Character
+								end
+							else
+								edit_model_data({ Toolname = Weapon }, Key)
+								edit_model_data({ Health = Humanoid.Health }, Key)
+							end
+							Seen[Key] = true
+						end
+					end
+				end
+			end
+		end)
+	end
 
 	for Key, Model in pairs(Cache) do
 		pcall(function()
-			if typeof(Model) ~= "Instance" then
+			if not Model.Parent then
+				remove_model_data(Key)
 				Cache[Key] = nil
 				return
 			end
 
-			local HRP = Model:FindFirstChild("HumanoidRootPart")
-			if not HRP or not Seen[Key] then
+			local HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart")
+			if not HumanoidRootPart or not Seen[Key] then
 				remove_model_data(Key)
 				Cache[Key] = nil
 			end
 		end)
 	end
-end
-
-task.spawn(function()
-    while true do
-        task.wait(1 / 15)
-        Update()
-    end
 end)
