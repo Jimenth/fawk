@@ -3,6 +3,10 @@ loadstring(game: HttpGet("https://raw.githubusercontent.com/Sploiter13/severefun
 local Load = luau.load(game: HttpGet("https://raw.githubusercontent.com/DCHARLESAKAMRGREEN/Severe-Luas/main/Libraries/Pseudosynonym.lua"))
 local Version = "1.0.0"
 
+local Offsets = {
+    TextLabelText = 3648
+}
+
 local Workspace = game:GetService("Workspace")
 local Tycoons = Workspace.  Tycoon.  Tycoons
 local Players = game:GetService("Players")
@@ -12,7 +16,7 @@ local Library = Load()
 local Window = Library:  CreateWindow({
     Title = "War Tycoon | " .. Version,
     Tag = LocalPlayer.DisplayName,
-    Keybind = "Insert",
+    Keybind = "Alt",
     AutoShow = true
 })
 
@@ -32,6 +36,31 @@ MenuContainer:AddWatermark({ Watermark = "Hello Croski", ShowFPS = true })
 MenuContainer:AddKeybindList({})
 MenuContainer:AddButton({ Name = "Unload", Unsafe = true, Callback = function() Library:Unload() end })
 
+local function GetCompletion()
+    local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    if not PlayerGui then return 0 end
+
+    local HUD = PlayerGui.UI.Container.HUD.Menu.HUD
+
+    local Left = HUD:FindFirstChild("Left")
+    if not Left then return 0 end
+
+    local Completion = Left:FindFirstChild("TycoonCompletion")
+    if not Completion then return 0 end
+    
+    local Bar = Completion:FindFirstChild("Bar")
+    if not Bar then return end
+
+    local Progress = Bar:FindFirstChild("BarProgressAmount")
+    if not Progress then return end
+
+    local RealAmount = 0
+    local Percentage = tostring(memory.readstring(Progress, Offsets.TextLabelText))
+    if Progress then RealAmount = tonumber(Percentage:match("(%d+%.?%d*)")) end
+
+    return RealAmount or 0
+end
+
 local function GetCash()
     local Stats = LocalPlayer:FindFirstChild("leaderstats")
     if not Stats then return 0 end
@@ -40,6 +69,16 @@ local function GetCash()
     if not Cash then return 0 end
 
     return Cash.Value or 0
+end
+
+local function GetRebirths()
+    local Stats = LocalPlayer:FindFirstChild("leaderstats")
+    if not Stats then return 0 end
+
+    local Rebirths = Stats:FindFirstChild("Rebirths")
+    if not Rebirths then return 0 end
+
+    return Rebirths.Value or 0
 end
 
 local function GetPlot()
@@ -53,7 +92,7 @@ local function GetPlot()
 end
 
 local function SetPosition(Object, Target)
-    Object.Position = Target + vector. create(0.2, 0.2, 0.2)
+    Object.Position = Target + vector.create(0.2, 0.2, 0.2)
 end
 
 local function AutoCollect()
@@ -66,12 +105,11 @@ local function AutoCollect()
     local Plot = GetPlot()
     if not Plot then return end
 
-    local Collector = Plot:FindFirstChild("Essentials")
-        and Plot.Essentials:FindFirstChild("CollectorParts")
+    local Collector = Plot:FindFirstChild("Essentials") and Plot.Essentials:FindFirstChild("CollectorParts")
 
-    local Metal = Collector and Collector: FindFirstChild("Metal")
-    if Metal then
-        SetPosition(HRP, Metal.Position)
+    local Object = Collector and Collector:FindFirstChild("Display")
+    if Object then
+        SetPosition(HRP, Object.Position + vector.create(0, 0, -3))
     end
 end
 
@@ -87,39 +125,78 @@ local function AutoComplete()
     local Plot = GetPlot()
     if not Plot then return end
 
-    local Items = Plot:  FindFirstChild("UnpurchasedButtons")
+    local Items = Plot:FindFirstChild("UnpurchasedButtons")
     if not Items then return end
 
-    local Buttons = {}
+    local RebirthButtons = {}
+    local OilButtons = {}
+    local CashButtons = {}
 
     for _, Item in ipairs(Items:GetChildren()) do
-        if Item:GetAttribute("ButtonType") == "Cash" then
+        local ButtonType = Item:GetAttribute("ButtonType")
+        local name = Item.Name or ""
+        if ButtonType == "Rebirth" then
+            local Requirement = tonumber(Item:GetAttribute("RebirthRequirement"))
+            local Primary = Item:FindFirstChild("Gradient")
+            if Requirement and Primary then
+                if GetRebirths() >= Requirement then
+                    RebirthButtons[#RebirthButtons + 1] = {
+                        Pad = Primary,
+                        Req = Requirement
+                    }
+                end
+            end
+        elseif ButtonType == "Cash" then
             local Price = tonumber(Item:GetAttribute("Price"))
             local Primary = Item:FindFirstChild("Gradient")
-
             if Price and Primary then
-                Buttons[#Buttons + 1] = {
-                    Pad = Primary,
-                    Price = Price
-                }
+                if name:sub(1, 3) == "Oil" then
+                    OilButtons[#OilButtons + 1] = {
+                        Pad = Primary,
+                        Price = Price
+                    }
+                else
+                    CashButtons[#CashButtons + 1] = {
+                        Pad = Primary,
+                        Price = Price
+                    }
+                end
             end
         end
     end
 
-    table.sort(Buttons, function(a, b)
+    if #RebirthButtons > 0 then
+        table.sort(RebirthButtons, function(a, b) return a.Req < b.Req end)
+        local Target = RebirthButtons[1]
+        SetPosition(HRP, Target.Pad.Position)
+        return
+    end
+
+    if #OilButtons > 0 then
+        table.sort(OilButtons, function(a, b) return a.Price < b.Price end)
+        local Target = OilButtons[1]
+        if GetCash() < Target.Price then
+            AutoCollect()
+            return
+        end
+        SetPosition(HRP, Target.Pad.Position)
+        return
+    end
+
+    table.sort(CashButtons, function(a, b)
         return a.Price < b.Price
     end)
 
-    if #Buttons == 0 then return end
+    if #CashButtons == 0 then return end
 
-    local CheapestButton = Buttons[1]
+    local CheapestButton = CashButtons[1]
 
     if GetCash() < CheapestButton.Price then
         AutoCollect()
         return
     end
 
-    SetPosition(HRP, CheapestButton. Pad. Position)
+    SetPosition(HRP, CheapestButton.Pad.Position)
 end
 
 task.spawn(function()
@@ -137,6 +214,8 @@ task.spawn(function()
             AutoComplete()
             task.wait(0.5)
         end
-        task. wait(0.4)
+        task.wait(0.4)
     end
 end)
+
+GetCompletion()
