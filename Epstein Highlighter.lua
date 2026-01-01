@@ -1,3 +1,4 @@
+--!optimize 2
 local Camera = workspace.CurrentCamera
 
 local IntersectionCuts = {}
@@ -189,27 +190,18 @@ local function GetPartsFromTarget(Target)
         if Target.ClassName == "Model" then
             for _, Child in ipairs(Target:GetChildren()) do
                 if (Child.ClassName == "Part" or Child.ClassName == "MeshPart") and Child.Transparency < 1 then
-                    local Size = Child.Size
-                    if Size.X > 0.2 or Size.Y > 0.2 then
-                        table.insert(Parts, Child)
-                    end
+                    table.insert(Parts, Child)
                 end
             end
         elseif Target.ClassName == "Part" or Target.ClassName == "MeshPart" then
             if Target.Transparency < 1 then
-                local Size = Target.Size
-                if Size.X > 0.2 or Size.Y > 0.2 then
-                    table.insert(Parts, Target)
-                end
+                table.insert(Parts, Target)
             end
         end
     elseif type(Target) == "table" then
         for _, Part in ipairs(Target) do
             if typeof(Part) == "Instance" and (Part.ClassName == "Part" or Part.ClassName == "MeshPart") and Part.Transparency < 1 then
-                local Size = Part.Size
-                if Size.X > 0.2 or Size.Y > 0.2 then
-                    table.insert(Parts, Part)
-                end
+                table.insert(Parts, Part)
             end
         end
     end
