@@ -1,4 +1,3 @@
---! optimize 2
 local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jimenth/fawk/refs/heads/main/Epstein%20Highlighter.lua"))();
 Bytecode = game:HttpGet("https://raw.githubusercontent.com/DCHARLESAKAMRGREEN/Severe-Luas/main/Libraries/Pseudosynonym.lua")
 local Load = luau.load(Bytecode)
@@ -6,10 +5,11 @@ local Library = Load()
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
 local Dropped = Workspace:FindFirstChild("DroppedItems")
 local Containers = Workspace:FindFirstChild("Containers")
+local Vehicles = Workspace:FindFirstChild("Vehicles")
+local Zones = Workspace:FindFirstChild("AiZones")
 
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
@@ -459,6 +459,7 @@ local RenderCrates = MainCrates:AddToggle({ Name = "Enabled", Value = false, Too
 local RenderCratesHighlight = MainCrates:AddToggle({ Name = "Highlight", Value = false, Tooltip = "Enable Highlights for Crates" })
 local CrateDistance = MainCrates:AddSlider({ Name = "Distance", Min = 0, Max = 1500, Default = 150, Rounding = 5 })
 local CrateFilter = MainCrates:AddDropdown({ Name = "Crate Filter", Values = {"Military", "Civilian", "EDF", "Other"}, Default = {"Civilian"}, Multi = true })
+MainCrates:AddSeparator()
 local DisplayInventory = MainCrates:AddToggle({ Name = "Display Inventory", Value = false, Tooltip = "Show items inside crates" })
 local InventoryFilter = MainCrates:AddDropdown({ Name = "Inventory Filter", Values = {"Weapons", "Attachments", "Magazines", "Ammo", "Medical", "Armor", "Clothing", "Visors", "Optics", "Melee", "Grenades", "Deployables", "Food", "Keys", "Tools", "Materials", "Electronics", "Valuables", "Maps", "Special"}, Default = {"Weapons"}, Multi = true })
 
@@ -466,10 +467,33 @@ local RenderCorpses = MainCorpses:AddToggle({ Name = "Enabled", Value = false, T
 local RenderCorpsesHighlight = MainCorpses:AddToggle({ Name = "Highlight", Value = false, Tooltip = "Performance Intensive" })
 local CorpseDistance = MainCorpses:AddSlider({ Name = "Distance", Min = 0, Max = 1500, Default = 150, Rounding = 5 })
 
+local VehiclesContainer = VisualsTab:AddContainer({ Name = "Vehicles", Side = "Right", AutoSize = true })
+local MainVehicles = VehiclesContainer:AddTab("Vehicles")
+local RenderVehicles = MainVehicles:AddToggle({ Name = "Enabled", Value = false, Tooltip = "Render All Vehicles" })
+local VehicleDistance = MainVehicles:AddSlider({ Name = "Distance", Min = 0, Max = 2500, Default = 400, Rounding = 5 })
+
+local SettingsTab = Window:AddTab({ Name = "Settings" })
+local MenuContainer = SettingsTab:AddContainer({ Name = "Menu", Side = "Left", AutoSize = true })
+
+MenuContainer:AddMenuBind({})
+MenuContainer:AddSeparator()
+
+MenuContainer:AddWatermark({
+    Watermark = "Project Dih | ".. Version.. " | "..  Workspace:GetAttribute("MapName"),
+    ShowFPS = true
+})
+
+MenuContainer:AddKeybindList({})
+MenuContainer:AddButton({ Name = "Copy Discord Link", Callback = function() setclipboard("discord.gg/severe1") end })
+MenuContainer:AddButton({ Name = "Unload", Unsafe = true, Callback = function() Library:Unload() end })
+
 local Stored = {
     Drops  = {},
     Crates = {},
-    Corpses = {}
+    Corpses = {},
+    Vehicles = {},
+    AI = {},
+    Players = {}
 }
 
 local Client = {
@@ -477,6 +501,224 @@ local Client = {
     HumanoidRootPart = nil,
     Position = Vector3.new(0, 0, 0)
 }
+
+local function GetBodyParts(Model)
+    return {
+        Head = Model:FindFirstChild("Head"),
+        UpperTorso = Model:FindFirstChild("LowerTorso"),
+        LowerTorso = Model:FindFirstChild("LowerTorso"),
+
+        LeftUpperArm = Model:FindFirstChild("LeftUpperArm"),
+        LeftLowerArm = Model:FindFirstChild("LeftLowerArm"),
+        LeftHand = Model:FindFirstChild("LeftHand"),
+
+        RightUpperArm = Model:FindFirstChild("RightUpperArm"),
+        RightLowerArm = Model:FindFirstChild("RightLowerArm"),
+        RightHand = Model:FindFirstChild("RightHand"),
+
+        LeftUpperLeg = Model:FindFirstChild("LeftUpperLeg"),
+        LeftLowerLeg = Model:FindFirstChild("LeftLowerLeg"),
+        LeftFoot = Model:FindFirstChild("LeftFoot"),
+
+        RightUpperLeg = Model:FindFirstChild("RightUpperLeg"),
+        RightLowerLeg = Model:FindFirstChild("RightLowerLeg"),
+        RightFoot = Model:FindFirstChild("RightFoot"),
+
+        HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart"),
+    }
+end
+
+local function EntityData(Model, Parts)
+	if not Model then return nil end 
+
+	local Humanoid = Model:FindFirstChildOfClass("Humanoid")
+	local Health = 100
+	local MaxHealth = 100
+	
+	if Humanoid then
+		Health = Humanoid.Health
+		MaxHealth = Humanoid.MaxHealth
+	end
+
+	local Data = {
+		Username = tostring(Model),
+		Displayname = Model.Name,
+		Userid = -1,
+		Character = Model,
+		PrimaryPart = Model.PrimaryPart or Parts.HumanoidRootPart,
+		Humanoid = Humanoid or Model.PrimaryPart,
+		Head = Parts.Head,
+		Torso = Parts.UpperTorso,
+		UpperTorso = Parts.UpperTorso,
+		LowerTorso = Parts.LowerTorso,
+		LeftArm = Parts.LeftArm or Parts.LeftUpperArm, 
+		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
+		RightArm = Parts.RightArm or Parts.RightUpperArm, 
+		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
+		LeftUpperArm = Parts.LeftUpperArm,
+		LeftLowerArm = Parts.LeftLowerArm,
+		LeftHand = Parts.LeftHand,
+		RightUpperArm = Parts.RightUpperArm,
+		RightLowerArm = Parts.RightLowerArm,
+		RightHand = Parts.RightHand,
+		LeftUpperLeg = Parts.LeftUpperLeg,
+		LeftLowerLeg = Parts.LeftLowerLeg,
+		LeftFoot = Parts.LeftFoot,
+		RightUpperLeg = Parts.RightUpperLeg,
+		RightLowerLeg = Parts.RightLowerLeg,
+		RightFoot = Parts.RightFoot,
+		BodyHeightScale = 1,
+		RigType = 1,
+		Toolname = Model:FindFirstChildOfClass("Model").Name,
+		Teamname = "AI",
+		Whitelisted = false,
+		Archenemies = true,
+		Aimbot_Part = Parts.Head,
+		Aimbot_TP_Part = Parts.Head,
+		Triggerbot_Part = Parts.Head,
+		Health = Health,
+		MaxHealth = MaxHealth,
+        body_parts_data = {
+			{ name = "LowerTorso", part = Parts.LowerTorso },
+			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
+			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
+			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
+			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
+			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
+			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
+			{ name = "RightUpperArm", part = Parts.RightUpperArm },
+			{ name = "RightLowerArm", part = Parts.RightLowerArm },
+		},
+		full_body_data = {
+			{ name = "Head", part = Parts.Head },
+			{ name = "UpperTorso", part = Parts.UpperTorso },
+			{ name = "LowerTorso", part = Parts.LowerTorso },
+			{ name = "HumanoidRootPart", part = Parts.HumanoidRootPart },
+		
+			{ name = "LeftUpperArm", part = Parts.LeftUpperArm },
+			{ name = "LeftLowerArm", part = Parts.LeftLowerArm },
+			{ name = "LeftHand", part = Parts.LeftHand },
+		
+			{ name = "RightUpperArm", part = Parts.RightUpperArm },
+			{ name = "RightLowerArm", part = Parts.RightLowerArm },
+			{ name = "RightHand", part = Parts.RightHand },
+		
+			{ name = "LeftUpperLeg", part = Parts.LeftUpperLeg },
+			{ name = "LeftLowerLeg", part = Parts.LeftLowerLeg },
+			{ name = "LeftFoot", part = Parts.LeftFoot },
+		
+			{ name = "RightUpperLeg", part = Parts.RightUpperLeg },
+			{ name = "RightLowerLeg", part = Parts.RightLowerLeg },
+			{ name = "RightFoot", part = Parts.RightFoot },
+		}
+	}
+
+	return tostring(Model), Data
+end
+
+local function GetPlayerData(Player)
+	if not Player then return nil end
+
+	local Character = Player.Character
+	if not Character then return nil end
+
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+	if not Humanoid then return nil end
+
+	local Parts = GetBodyParts(Character)
+	if not Parts then return nil end
+
+	local Health = Humanoid.Health
+	local MaxHealth = Humanoid.MaxHealth
+
+	local Data = {
+		Username = Player.Name,
+		Displayname = Player.DisplayName,
+		Userid = Player.UserId,
+
+		Character = Character,
+		PrimaryPart = Character.PrimaryPart,
+		Humanoid = Humanoid,
+
+		Head = Parts.Head,
+		Torso = Parts.Torso or Parts.UpperTorso,
+		UpperTorso = Parts.UpperTorso,
+		LowerTorso = Parts.LowerTorso,
+
+		LeftArm = Parts.LeftArm or Parts.LeftUpperArm,
+		LeftLeg = Parts.LeftLeg or Parts.LeftUpperLeg,
+		RightArm = Parts.RightArm or Parts.RightUpperArm,
+		RightLeg = Parts.RightLeg or Parts.RightUpperLeg,
+
+		LeftUpperArm = Parts.LeftUpperArm,
+		LeftLowerArm = Parts.LeftLowerArm,
+		LeftHand = Parts.LeftHand,
+
+		RightUpperArm = Parts.RightUpperArm,
+		RightLowerArm = Parts.RightLowerArm,
+		RightHand = Parts.RightHand,
+
+		LeftUpperLeg = Parts.LeftUpperLeg,
+		LeftLowerLeg = Parts.LeftLowerLeg,
+		LeftFoot = Parts.LeftFoot,
+
+		RightUpperLeg = Parts.RightUpperLeg,
+		RightLowerLeg = Parts.RightLowerLeg,
+		RightFoot = Parts.RightFoot,
+
+		BodyHeightScale = 1,
+		RigType = 1,
+		Toolname = "Unknown",
+		Teamname = Player.Team or "No Team",
+
+		Whitelisted = false,
+		Archenemies = false,
+
+		Aimbot_Part = Parts.Head,
+		Aimbot_TP_Part = Parts.Head,
+		Triggerbot_Part = Parts.Head,
+
+		Health = Health,
+		MaxHealth = MaxHealth,
+
+		body_parts_data = {
+			{ name = "LowerTorso", part = Character:FindFirstChild("LowerTorso") },
+			{ name = "LeftUpperLeg", part = Character:FindFirstChild("LeftUpperLeg") },
+			{ name = "LeftLowerLeg", part = Character:FindFirstChild("LeftLowerLeg") },
+			{ name = "RightUpperLeg", part = Character:FindFirstChild("RightUpperLeg") },
+			{ name = "RightLowerLeg", part = Character:FindFirstChild("RightLowerLeg") },
+			{ name = "LeftUpperArm", part = Character:FindFirstChild("LeftUpperArm") },
+			{ name = "LeftLowerArm", part = Character:FindFirstChild("LeftLowerArm") },
+			{ name = "RightUpperArm", part = Character:FindFirstChild("RightUpperArm") },
+			{ name = "RightLowerArm", part = Character:FindFirstChild("RightLowerArm") },
+		},
+
+		full_body_data = {
+			{ name = "Head", part = Character:FindFirstChild("Head") },
+			{ name = "UpperTorso", part = Character:FindFirstChild("UpperTorso") },
+			{ name = "LowerTorso", part = Character:FindFirstChild("LowerTorso") },
+			{ name = "HumanoidRootPart", part = Character:FindFirstChild("HumanoidRootPart") },
+
+			{ name = "LeftUpperArm", part = Character:FindFirstChild("LeftUpperArm") },
+			{ name = "LeftLowerArm", part = Character:FindFirstChild("LeftLowerArm") },
+			{ name = "LeftHand", part = Character:FindFirstChild("LeftHand") },
+
+			{ name = "RightUpperArm", part = Character:FindFirstChild("RightUpperArm") },
+			{ name = "RightLowerArm", part = Character:FindFirstChild("RightLowerArm") },
+			{ name = "RightHand", part = Character:FindFirstChild("RightHand") },
+
+			{ name = "LeftUpperLeg", part = Character:FindFirstChild("LeftUpperLeg") },
+			{ name = "LeftLowerLeg", part = Character:FindFirstChild("LeftLowerLeg") },
+			{ name = "LeftFoot", part = Character:FindFirstChild("LeftFoot") },
+
+			{ name = "RightUpperLeg", part = Character:FindFirstChild("RightUpperLeg") },
+			{ name = "RightLowerLeg", part = Character:FindFirstChild("RightLowerLeg") },
+			{ name = "RightFoot", part = Character:FindFirstChild("RightFoot") },
+		},
+	}
+
+	return tostring(Character), Data
+end
 
 local function UpdateClient()
     local Character = LocalPlayer and LocalPlayer.Character
@@ -540,7 +782,7 @@ local function ItemValid(Name)
     return false
 end
 
-local function InventoryItemValid(Name)
+local function CrateItemValid(Name)
     local Selected = InventoryFilter.Value
 
     if not next(Selected) then
@@ -622,7 +864,7 @@ local function Cache()
                         local FilteredItems = {}
                         if InventoryFolder then
                             for _, Item in ipairs(InventoryFolder:GetChildren()) do
-                                if InventoryItemValid(Item.Name) then
+                                if CrateItemValid(Item.Name) then
                                     table.insert(FilteredItems, Item.Name)
                                 end
                             end
@@ -650,7 +892,7 @@ local function Cache()
                                         local InventoryFolder = Crate:FindFirstChild("Inventory")
                                         if InventoryFolder then
                                             for _, Item in ipairs(InventoryFolder:GetChildren()) do
-                                                if InventoryItemValid(Item.Name) then
+                                                if CrateItemValid(Item.Name) then
                                                     table.insert(FilteredItems, Item.Name)
                                                 end
                                             end
@@ -677,7 +919,7 @@ local function Cache()
                                 local InventoryFolder = Container:FindFirstChild("Inventory")
                                 if InventoryFolder then
                                     for _, Item in ipairs(InventoryFolder:GetChildren()) do
-                                        if InventoryItemValid(Item.Name) then
+                                        if CrateItemValid(Item.Name) then
                                             table.insert(FilteredItems, Item.Name)
                                         end
                                     end
@@ -720,6 +962,45 @@ local function Cache()
                                 Item = Corpse,
                                 Object = Object,
                                 Name = Corpse:GetAttribute("DisplayName") or Corpse.Name
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if RenderVehicles.Value then
+        local MaxDistance = VehicleDistance.Value
+        for Vehicle, Data in pairs(Stored.Vehicles) do
+            if not Vehicle.Parent or not ItemValid(Data.Item.Name) then
+                Stored.Vehicles[Vehicle] = nil
+            end
+        end
+        
+        for Vehicle, Data in pairs(Stored.Vehicles) do
+            if Vehicle.Parent then
+                local Body = Vehicle:FindFirstChild("Body")
+                local Object = Body and Body.PrimaryPart
+                if not Object or vector.magnitude(Client.Position - Object.Position) > MaxDistance then
+                    Stored.Vehicles[Vehicle] = nil
+                end
+            end
+        end
+        
+        if Vehicles then
+            for _, Vehicle in ipairs(Vehicles:GetChildren()) do
+                if Vehicle.ClassName == "Model" and not Stored.Vehicles[Vehicle] then
+                    local Body = Vehicle:FindFirstChild("Body")
+                    local Object = Body and Body.PrimaryPart
+                    if Object then
+                        local Distance = vector.magnitude(Client.Position - Object.Position)
+                        local Name = Vehicle.Name.. " [".. Vehicle:GetAttribute("VehicleType").. "]"
+                        if Distance <= MaxDistance then
+                            Stored.Vehicles[Vehicle] = {
+                                Item = Vehicle,
+                                Object = Object,
+                                Name = Name
                             }
                         end
                     end
@@ -783,13 +1064,132 @@ local function Render()
             end
         end
     end
+
+    if RenderVehicles.Value then
+        for _, Data in pairs(Stored.Vehicles) do
+            local Object = Data.Object
+            if Object and Object.Parent then
+                local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
+                if OnScreen then
+                    DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(255, 255, 255), 1, Data.Name, true, "Proggy")
+                end
+            end
+        end
+    end
 end
 
 task.spawn(function()
-    while true do
-        task.wait(1 / 2)
+	while true do
+		task.wait(0.5)
         Cache()
-    end
+
+		local Seen = {}
+		
+		local CurrentAI = Zones and Zones:GetChildren() or {}
+
+		for _, Zone in ipairs(CurrentAI) do
+			pcall(function()
+				for _, NPC in ipairs(Zone:GetChildren()) do
+					pcall(function()
+						if typeof(NPC) ~= "Instance" or NPC.ClassName ~= "Model" then
+							return
+						end
+
+						local Humanoid = NPC:FindFirstChildOfClass("Humanoid")
+						if not Humanoid then return end
+
+						local HumanoidRootPart = NPC:FindFirstChild("HumanoidRootPart")
+						if not HumanoidRootPart then return end
+
+						if NPC.PrimaryPart ~= HumanoidRootPart then return end
+
+						local Parts = GetBodyParts(NPC)
+						if not Parts or not Parts.HumanoidRootPart then return end
+
+						local Key = tostring(NPC)
+
+						if not Stored.AI[Key] then
+							local ID, Data = EntityData(NPC, Parts)
+							if ID and Data and add_model_data(Data, ID) then
+								Stored.AI[ID] = NPC
+							end
+						else
+							edit_model_data({
+								Health = Humanoid.Health
+							}, Key)
+						end
+
+						Seen[Key] = true
+					end)
+				end
+			end)
+		end
+
+	    for _, Player in ipairs(Players:GetChildren()) do
+		    pcall(function()
+		        if Player and Player ~= LocalPlayer then
+				    local Character = Player.Character
+				    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+
+				    if Humanoid and Character ~= Client.Character then
+					    local Key = tostring(Character)
+					    local Parts = GetBodyParts(Character)
+
+					    if Parts and Parts.HumanoidRootPart then
+						    if is_team_check_active() then
+						    	if Player.Team == LocalPlayer.Team then
+								    if Stored.Players[Key] then
+								    	local ID = tostring(Character)
+								    	remove_model_data(ID)
+								    	Stored.Players[ID] = nil
+								    end
+								    Seen[Key] = nil
+						    	else
+								    if not Stored.Players[Key] then
+									    local ID, Data = GetPlayerData(Player)
+									    if ID and Data and add_model_data(Data, ID) then
+									    	Stored.Players[ID] = Character
+									    end
+								    else
+								    	edit_model_data({ Health = Humanoid.Health }, Key)
+							    	end
+							    	Seen[Key] = true
+						    	end
+					    	else
+						    	if not Stored.Players[Key] then
+								    local ID, Data = GetPlayerData(Player)
+								    if ID and Data and add_model_data(Data, ID) then
+								        Stored.Players[ID] = Character
+								    end
+								else
+									edit_model_data({ Health = Humanoid.Health }, Key)
+								end
+								Seen[Key] = true
+							end
+						end
+					end
+				end
+			end)
+		end
+
+		for ID, Model in pairs(Stored.AI) do
+			pcall(function()
+				if not Model or not Model.Parent or not Seen[ID] then
+					remove_model_data(ID)
+					Stored.AI[ID] = nil
+				end
+			end)
+		end
+
+		for ID, Model in pairs(Stored.Players) do
+			pcall(function()
+				if not Model or not Model.Parent or not Seen[ID] then
+					remove_model_data(ID)
+					Stored.Players[ID] = nil
+				end
+			end)
+		end
+	end
 end)
 
 RunService.Render:Connect(Render)
