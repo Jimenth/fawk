@@ -1,4 +1,3 @@
---!optimize 2
 local Camera = workspace.CurrentCamera
 
 local IntersectionCuts = {}
@@ -28,9 +27,9 @@ local function ComputeConvexHull(Points)
         while LowerCount >= 2 and 
               CrossProduct2D(LowerHull[LowerCount - 1], LowerHull[LowerCount], CurrentPoint) <= 0 do
             LowerHull[LowerCount] = nil
-            LowerCount = LowerCount - 1
+            LowerCount -= 1
         end
-        LowerCount = LowerCount + 1
+        LowerCount += 1
         LowerHull[LowerCount] = CurrentPoint
     end
     
@@ -39,20 +38,20 @@ local function ComputeConvexHull(Points)
         while UpperCount >= 2 and 
               CrossProduct2D(UpperHull[UpperCount - 1], UpperHull[UpperCount], CurrentPoint) <= 0 do
             UpperHull[UpperCount] = nil
-            UpperCount = UpperCount - 1
+            UpperCount -= 1
         end
-        UpperCount = UpperCount + 1
+        UpperCount += 1
         UpperHull[UpperCount] = CurrentPoint
     end
     
     local Hull = {}
     local HullCount = 0
     for I = 1, LowerCount - 1 do 
-        HullCount = HullCount + 1
+        HullCount += 1
         Hull[HullCount] = LowerHull[I]
     end
     for I = 1, UpperCount - 1 do 
-        HullCount = HullCount + 1
+        HullCount += 1
         Hull[HullCount] = UpperHull[I]
     end
     
@@ -176,11 +175,11 @@ local function IsOuterEdge(EdgeStart, EdgeEnd, PolygonIndex, AllPolygons)
 end
 
 local function GetNormalVector(P1, P2)
-    local dx = P2.X - P1.X
-    local dy = P2.Y - P1.Y
-    local length = math.sqrt(dx * dx + dy * dy)
-    if length < 0.001 then return vector.create(0, 0) end
-    return vector.create(-dy / length, dx / length)
+    local Dx = P2.X - P1.X
+    local Dy = P2.Y - P1.Y
+    local Length = math.sqrt(Dx * Dx + Dy * Dy)
+    if Length < 0.001 then return vector.create(0, 0) end
+    return vector.create(-Dy / Length, Dx / Length)
 end
 
 local function GetPartsFromTarget(Target)
@@ -256,7 +255,7 @@ local function Highlight(Color, Target, Options)
                 if Vertex.Y > MaxY then MaxY = Vertex.Y end
             end
             
-            PolygonCount = PolygonCount + 1
+            PolygonCount += 1
             ScreenPolygons[PolygonCount] = {
                 Vertices = Hull,
                 BBox = { MinX = MinX, MinY = MinY, MaxX = MaxX, MaxY = MaxY },
@@ -275,9 +274,9 @@ local function Highlight(Color, Target, Options)
         for PolygonIndex = 1, PolygonCount do
             local Vertices = ScreenPolygons[PolygonIndex].Vertices
             if #Vertices >= 3 then
-                for i = 2, #Vertices - 2 do
+                for I = 2, #Vertices - 2 do
                     DrawingImmediate.FilledTriangle(
-                        Vertices[1], Vertices[i], Vertices[i + 1],
+                        Vertices[1], Vertices[I], Vertices[I + 1],
                         FillColor, FillOpacity
                     )
                 end
@@ -297,7 +296,7 @@ local function Highlight(Color, Target, Options)
                 local OtherBBox = ScreenPolygons[OtherIndex].BBox
                 if not (CurrentBBox.MinX > OtherBBox.MaxX or CurrentBBox.MaxX < OtherBBox.MinX or 
                        CurrentBBox.MinY > OtherBBox.MaxY or CurrentBBox.MaxY < OtherBBox.MinY) then
-                    BlockerCount = BlockerCount + 1
+                    BlockerCount += 1
                     BlockingPolygons[BlockerCount] = ScreenPolygons[OtherIndex]
                 end
             end
@@ -341,7 +340,7 @@ local function Highlight(Color, Target, Options)
                             )
                             
                             if IntersectionT then
-                                CutCount = CutCount + 1
+                                CutCount += 1
                                 IntersectionCuts[CutCount] = IntersectionT
                             end
                         end
@@ -372,7 +371,7 @@ local function Highlight(Color, Target, Options)
                             local SegStart = vector.create(StartX + (EndX - StartX) * PreviousCut, StartY + (EndY - StartY) * PreviousCut)
                             local SegEnd = vector.create(StartX + (EndX - StartX) * CurrentCut, StartY + (EndY - StartY) * CurrentCut)
                             
-                            SegmentCount = SegmentCount + 1
+                            SegmentCount += 1
                             OutlineSegments[SegmentCount] = { Start = SegStart, End = SegEnd }
                         end
                         
