@@ -1,3 +1,4 @@
+--!optimize 2
 local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jimenth/fawk/refs/heads/main/Epstein%20Highlighter.lua"))();
 Bytecode = game:HttpGet("https://raw.githubusercontent.com/DCHARLESAKAMRGREEN/Severe-Luas/main/Libraries/Pseudosynonym.lua")
 local Load = luau.load(Bytecode)
@@ -22,6 +23,38 @@ local Window = Library:CreateWindow({
     Keybind = "Insert",
     AutoShow = true
 })
+
+local Interface = {
+    Dimensions = {
+        Width = 320,
+        Height = 64,
+    },
+
+    Padding = {
+        Outer = 4,
+        Inner = 6,
+    },
+
+    Coloring = {
+        Accent = Color3.fromRGB(95, 100, 127),
+        Text = Color3.fromRGB(249, 249, 249),
+        SubtleText = Color3.fromRGB(200, 200, 200),
+
+        Border = {
+            Outer = Color3.fromRGB(30, 30, 30),
+            Inner = Color3.fromRGB(12, 12, 12),
+        },
+
+        Background = {
+            Main = Color3.fromRGB(22, 22, 22),
+            Content = Color3.fromRGB(34, 34, 34),
+        }
+    },
+
+    Font = "Proggy",
+    SmallText = 12,
+    MediumText = 14,
+}
 
 local Crates = {
     ["Military"] = {
@@ -493,7 +526,9 @@ local Stored = {
     Corpses = {},
     Vehicles = {},
     AI = {},
-    Players = {}
+    Players = {},
+    Humanoid = {},
+    Health = {}
 }
 
 local Client = {
@@ -502,10 +537,74 @@ local Client = {
     Position = Vector3.new(0, 0, 0)
 }
 
+local function GetDistance2D(A, B)
+    local DeltaX = A.X - B.X
+    local DeltaY = A.Y - B.Y
+    return math.sqrt(DeltaX * DeltaX + DeltaY * DeltaY)
+end
+
+local function GetClosestPlayer()
+    local MousePosition = getmouseposition()
+    local ClosestPlayer = nil
+    local ClosestDistance = 100
+    
+    for _, Player in ipairs(Players:GetChildren()) do
+        if Player ~= LocalPlayer and Player.Character then
+            local Character = Player.Character
+            local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
+            
+            if HumanoidRootPart then
+                local Screen, OnScreen = Camera:WorldToScreenPoint(HumanoidRootPart.Position)
+                
+                if OnScreen then
+                    local Distance = GetDistance2D(Vector2.new(MousePosition.X, MousePosition.Y), Vector2.new(Screen.X, Screen.Y))
+                    
+                    if Distance < ClosestDistance then
+                        ClosestDistance = Distance
+                        ClosestPlayer = Player
+                    end
+                end
+            end
+        end
+    end
+    
+    return ClosestPlayer
+end
+
+local function GetWeapon(Character)
+    if not Character then return "None" end
+
+    local Instance = Character:FindFirstChild("Holding")
+    
+    if Instance and Instance.ClassName == "ObjectValue" and Instance.Value then
+        if Instance.Value.Name and type(Instance.Value.Name) == "string" then
+            return Instance.Value.Name
+        end
+    end
+
+    return "None"
+end
+
+local function GetClothing(Character)
+    if not Character then return end
+    local Mask, Head, Chestrig, Leg, Back, Glove = "None", "None", "None", "None", "None", "None"
+    
+    local Clothing = Character:FindFirstChild("Clothing")
+    if Clothing then
+        Mask = (Clothing.ClothingMask and Clothing.ClothingMask.Value and type(Clothing.ClothingMask.Value.Name) == "string" and Clothing.ClothingMask.Value.Name) or "None"
+        Head = (Clothing.ClothingHeadware and Clothing.ClothingHeadware.Value and type(Clothing.ClothingHeadware.Value.Name) == "string" and Clothing.ClothingHeadware.Value.Name) or "None"
+        Chestrig = (Clothing.ClothingChestRig and Clothing.ClothingChestRig.Value and type(Clothing.ClothingChestRig.Value.Name) == "string" and Clothing.ClothingChestRig.Value.Name) or "None"
+        Leg = (Clothing.ClothingLegArmor and Clothing.ClothingLegArmor.Value and type(Clothing.ClothingLegArmor.Value.Name) == "string" and Clothing.ClothingLegArmor.Value.Name) or "None"
+        Back = (Clothing.ClothingBackpack and Clothing.ClothingBackpack.Value and type(Clothing.ClothingBackpack.Value.Name) == "string" and Clothing.ClothingBackpack.Value.Name) or "None"
+    end
+    
+    return Mask, Head, Chestrig, Leg, Back
+end
+
 local function GetBodyParts(Model)
     return {
         Head = Model:FindFirstChild("Head"),
-        UpperTorso = Model:FindFirstChild("LowerTorso"),
+        UpperTorso = Model:FindFirstChild("UpperTorso"),
         LowerTorso = Model:FindFirstChild("LowerTorso"),
 
         LeftUpperArm = Model:FindFirstChild("LeftUpperArm"),
@@ -1132,6 +1231,7 @@ task.spawn(function()
 				    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
 				    if Humanoid and Character ~= Client.Character then
+                        local Weapon = GetWeapon(Character)
 					    local Key = tostring(Character)
 					    local Parts = GetBodyParts(Character)
 
@@ -1192,4 +1292,99 @@ task.spawn(function()
 	end
 end)
 
-RunService.Render:Connect(Render)
+local function DrawWindow(Position, Character, Transparency)
+    local X = Position.X; local Y = Position.Y; local Width = Interface.Dimensions.Width; local Height = Interface.Dimensions.Height; local Coloring = Interface.Coloring
+    local ContentX = X + 6; local ContentY = Y + 6; local ContentW = Width - 12; local ContentH = Height - 12
+
+    DrawingImmediate.FilledRectangle(Vector2.new(X, Y), Vector2.new(Width, Height), Coloring.Border.Outer, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 2, Y + 2), Vector2.new(Width - 4, Height - 4), Coloring.Border.Inner, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 3, Y + 3), Vector2.new(Width - 6, Height - 6), Coloring.Accent, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 4, Y + 4), Vector2.new(Width - 8, Height - 8), Coloring.Background.Main, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(ContentX, ContentY), Vector2.new(ContentW, ContentH), Coloring.Background.Content, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(ContentX + 6, ContentY + 5), Vector2.new(ContentW - 12, 1), Coloring.Accent, Transparency)
+
+    local WeaponName = GetWeapon(Character) or "None"
+    if typeof(WeaponName) ~= "string" then WeaponName = tostring(WeaponName or "") end
+    if WeaponName == "" or WeaponName == "None" then WeaponName = "No Weapon" end
+    DrawingImmediate.OutlinedText(Vector2.new(X + Width / 2, ContentY + 12), Interface.MediumText, Coloring.Text, Transparency, WeaponName, true, Interface.Font)
+
+    local CurrentHealth = 0; local MaxHealth = 100
+    if Character then local Hum = Stored.Humanoid[Character]; if not Hum or not Hum.Parent then Hum = Character:FindFirstChildOfClass("Humanoid"); Stored.Humanoid[Character] = Hum end; if Hum then if Stored.Health[Character] == nil then Stored.Health[Character] = tonumber(Hum.MaxHealth) or 100 end; MaxHealth = Stored.Health[Character] or 100; CurrentHealth = tonumber(Hum.Health) or 0 end end
+    local Percent = math.clamp((MaxHealth == 0) and 0 or (CurrentHealth / MaxHealth), 0, 1)
+    local BarW = ContentW - 18; local BarH = Interface.SmallText + 4; local BarX = ContentX + 9; local BarY = ContentY + ContentH - (BarH + 6)
+    local FillW = math.floor((BarW - 4) * Percent); if Percent > 0 and FillW < 2 then FillW = 2 end
+
+    DrawingImmediate.FilledRectangle(Vector2.new(BarX, BarY), Vector2.new(BarW, BarH), Color3.fromRGB(18, 18, 18), Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(BarX + 1, BarY + 1), Vector2.new(BarW - 2, BarH - 2), Color3.fromRGB(28, 28, 28), Transparency)
+    if FillW > 0 then DrawingImmediate.FilledRectangle(Vector2.new(BarX + 2, BarY + 2), Vector2.new(FillW, BarH - 4), Coloring.Accent, Transparency) end
+
+    local HealthText = tostring(math.floor(CurrentHealth) .. "/" .. tostring(MaxHealth))
+    DrawingImmediate.OutlinedText(Vector2.new(BarX + BarW / 2, BarY + (BarH / 2) - 5), Interface.SmallText, Coloring.Text, Transparency, HealthText, true, Interface.Font)
+end
+
+local function DrawClothingWindow(Position, Character, Transparency)
+    local X = Position.X
+    local Y = Position.Y
+    local Width = 400
+    local Height = 70
+    local Coloring = Interface.Coloring
+    local ContentX = X + 6
+    local ContentY = Y + 6
+    local ContentW = Width - 12
+    local ContentH = Height - 12
+
+    DrawingImmediate.FilledRectangle(Vector2.new(X, Y), Vector2.new(Width, Height), Coloring.Border.Outer, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 2, Y + 2), Vector2.new(Width - 4, Height - 4), Coloring.Border.Inner, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 3, Y + 3), Vector2.new(Width - 6, Height - 6), Coloring.Accent, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(X + 4, Y + 4), Vector2.new(Width - 8, Height - 8), Coloring.Background.Main, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(ContentX, ContentY), Vector2.new(ContentW, ContentH), Coloring.Background.Content, Transparency)
+    DrawingImmediate.FilledRectangle(Vector2.new(ContentX + 6, ContentY + 5), Vector2.new(ContentW - 12, 1), Coloring.Accent, Transparency)
+
+    local Mask, Head, Chestrig, Leg, Back = GetClothing(Character)
+    
+    local ClothingItems = {
+        {Name = "Mask", Value = Mask or "None"},
+        {Name = "Helmet", Value = Head or "None"},
+        {Name = "Rig", Value = Chestrig or "None"},
+        {Name = "Backpack", Value = Back or "None"},
+        {Name = "Legs", Value = Leg or "None"}
+    }
+    
+    local BoxWidth = 70
+    local BoxHeight = 30
+    local Spacing = 6
+    local StartX = ContentX + 9
+    local LabelY = ContentY + 10
+    local BoxY = ContentY + 22
+    
+    local function Shorten(String, Maximum)
+        if #String <= Maximum then
+            return String
+        end
+        return string.sub(String, 1, Maximum - 2) .. ".."
+    end
+    
+    for i, Item in ipairs(ClothingItems) do
+        local BoxX = StartX + ((i - 1) * (BoxWidth + Spacing))
+        
+        DrawingImmediate.OutlinedText(Vector2.new(BoxX + BoxWidth / 2, LabelY), Interface.SmallText, Coloring.Text, Transparency, Item.Name, true, Interface.Font)
+        DrawingImmediate.FilledRectangle(Vector2.new(BoxX, BoxY), Vector2.new(BoxWidth, BoxHeight), Color3.fromRGB(18, 18, 18), Transparency)
+        DrawingImmediate.FilledRectangle(Vector2.new(BoxX + 1, BoxY + 1), Vector2.new(BoxWidth - 2, BoxHeight - 2), Color3.fromRGB(28, 28, 28), Transparency)
+        DrawingImmediate.OutlinedText(Vector2.new(BoxX + BoxWidth / 2, BoxY + BoxHeight / 2 - 5), Interface.SmallText, Coloring.Text, Transparency, Shorten(Item.Value, 11), true, Interface.Font)
+    end
+end
+
+RunService.Render:Connect(function()
+    Render()
+    
+    local Player = GetClosestPlayer()
+    if not Player or not Player.Character then return end
+
+    local Target = Player.Character
+    
+    local ClothingWindowPosition = Vector2.new((Camera.ViewportSize.X / 2) - 200, Camera.ViewportSize.Y - Interface.Dimensions.Height - 180)
+    DrawClothingWindow(ClothingWindowPosition, Target, 1)
+    
+    local WindowPosition = Vector2.new((Camera.ViewportSize.X / 2) - (Interface.Dimensions.Width / 2), Camera.ViewportSize.Y - Interface.Dimensions.Height - 100)
+    DrawWindow(WindowPosition, Target, 1)
+end)
