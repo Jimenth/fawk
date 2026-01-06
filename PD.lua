@@ -3,6 +3,7 @@ local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jiment
 Bytecode = game:HttpGet("https://raw.githubusercontent.com/DCHARLESAKAMRGREEN/Severe-Luas/main/Libraries/Pseudosynonym.lua")
 local Load = luau.load(Bytecode)
 local Library = Load()
+task.wait(2)
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -11,6 +12,7 @@ local Dropped = Workspace:FindFirstChild("DroppedItems")
 local Containers = Workspace:FindFirstChild("Containers")
 local Vehicles = Workspace:FindFirstChild("Vehicles")
 local Zones = Workspace:FindFirstChild("AiZones")
+local ExitLocations = Workspace:FindFirstChild("NoCollision") and Workspace.NoCollision:FindFirstChild("ExitLocations")
 
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
@@ -505,6 +507,11 @@ local MainVehicles = VehiclesContainer:AddTab("Vehicles")
 local RenderVehicles = MainVehicles:AddToggle({ Name = "Enabled", Value = false, Tooltip = "Render All Vehicles" })
 local VehicleDistance = MainVehicles:AddSlider({ Name = "Distance", Min = 0, Max = 2500, Default = 400, Rounding = 5 })
 
+local ExitsContainer = VisualsTab:AddContainer({ Name = "Exits", Side = "Right", AutoSize = true })
+local MainExits = ExitsContainer:AddTab("Exits")
+local RenderExits = MainExits:AddToggle({ Name = "Enabled", Value = false, Tooltip = "Render All Exit Locations" })
+local ExitDistance = MainExits:AddSlider({ Name = "Distance", Min = 0, Max = 2500, Default = 500, Rounding = 5 })
+
 local SettingsTab = Window:AddTab({ Name = "Settings" })
 local MenuContainer = SettingsTab:AddContainer({ Name = "Menu", Side = "Left", AutoSize = true })
 
@@ -525,6 +532,7 @@ local Stored = {
     Crates = {},
     Corpses = {},
     Vehicles = {},
+    Exits = {},
     AI = {},
     Players = {},
     Humanoid = {},
@@ -543,32 +551,60 @@ local function GetDistance2D(A, B)
     return math.sqrt(DeltaX * DeltaX + DeltaY * DeltaY)
 end
 
-local function GetClosestPlayer()
+local function GetClosestEntity()
+    local Entities = {}
     local MousePosition = getmouseposition()
-    local ClosestPlayer = nil
+    local ClosestEntity = nil
     local ClosestDistance = 100
+
+    for _, Player in pairs(Stored.Players) do
+        table.insert(Entities, Player)
+    end
+
+    for _, AI in pairs(Stored.AI) do
+        table.insert(Entities, AI)
+    end
     
-    for _, Player in ipairs(Players:GetChildren()) do
-        if Player ~= LocalPlayer and Player.Character then
-            local Character = Player.Character
-            local HumanoidRootPart = Character and Character:FindFirstChild("HumanoidRootPart")
-            
-            if HumanoidRootPart then
-                local Screen, OnScreen = Camera:WorldToScreenPoint(HumanoidRootPart.Position)
+    for _, Entity in pairs(Entities) do
+        if Entity.ClassName == "Player" then
+            if Entity ~= LocalPlayer and Entity.Character then
+                local Character = Entity.Character
+                local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
                 
-                if OnScreen then
-                    local Distance = GetDistance2D(Vector2.new(MousePosition.X, MousePosition.Y), Vector2.new(Screen.X, Screen.Y))
+                if HumanoidRootPart then
+                    local Screen, OnScreen = Camera:WorldToScreenPoint(HumanoidRootPart.Position)
                     
-                    if Distance < ClosestDistance then
-                        ClosestDistance = Distance
-                        ClosestPlayer = Player
+                    if OnScreen then
+                        local Distance = GetDistance2D(Vector2.new(MousePosition.X, MousePosition.Y), Vector2.new(Screen.X, Screen.Y))
+                        
+                        if Distance < ClosestDistance then
+                            ClosestDistance = Distance
+                            ClosestEntity = Entity
+                        end
+                    end
+                end
+            end
+        elseif Entity.ClassName == "Model" then
+            if Entity then
+                local HumanoidRootPart = Entity:FindFirstChild("HumanoidRootPart")
+                
+                if HumanoidRootPart then
+                    local Screen, OnScreen = Camera:WorldToScreenPoint(HumanoidRootPart.Position)
+                    
+                    if OnScreen then
+                        local Distance = GetDistance2D(Vector2.new(MousePosition.X, MousePosition.Y), Vector2.new(Screen.X, Screen.Y))
+                        
+                        if Distance < ClosestDistance then
+                            ClosestDistance = Distance
+                            ClosestEntity = Entity
+                        end
                     end
                 end
             end
         end
     end
     
-    return ClosestPlayer
+    return ClosestEntity
 end
 
 local function GetWeapon(Character)
@@ -906,182 +942,125 @@ end
 
 local function Cache()
     if not UpdateClient() then return end
-
-    if RenderDrops.Value then
-        local MaxDistance = DropDistance.Value
-        for Drop, Data in pairs(Stored.Drops) do
-            if not Drop.Parent or not ItemValid(Data.Item.Name) then
-                Stored.Drops[Drop] = nil
-            end
-        end
+    local ClientPosition = Client.Position
+    
+    local function Process(Enabled, Storage, MaxDistance, Validator)
+        if not Enabled then return end
         
-        for Drop, Data in pairs(Stored.Drops) do
-            if Drop.Parent then
-                local Object = Drop.PrimaryPart
-                if not Object or vector.magnitude(Client.Position - Object.Position) > MaxDistance then
-                    Stored.Drops[Drop] = nil
-                end
-            end
+        for Key, Data in pairs(Storage) do
+            if not Key.Parent or not Data.Object or not Data.Object.Parent then Storage[Key] = nil elseif Validator and not Validator(Key) then Storage[Key] = nil elseif vector.magnitude(ClientPosition - Data.Object.Position) > MaxDistance then Storage[Key] = nil end
         end
+    end
+    
+    if RenderDrops.Value then
+        local Maximum = DropDistance.Value
+        Process(true, Stored.Drops, Maximum, function(Drop) return ItemValid(Drop.Name) end)
         
         if Dropped then
             for _, Drop in ipairs(Dropped:GetChildren()) do
                 if Drop.ClassName == "Model" and not Drop:FindFirstChild("Head") and not Stored.Drops[Drop] then
                     local Object = Drop.PrimaryPart
-                    if Object then
-                        local Distance = vector.magnitude(Client.Position - Object.Position)
-                        local Name = Drop.Name
-                        if Distance <= MaxDistance and ItemValid(Drop.Name) then
-                            Stored.Drops[Drop] = {
-                                Item = Drop,
-                                Object = Object,
-                                Name = Name
-                            }
-                        end
+                    if Object and vector.magnitude(ClientPosition - Object.Position) <= Maximum and ItemValid(Drop.Name) then
+                        Stored.Drops[Drop] = { Item = Drop, Object = Object, Name = Drop.Name }
                     end
                 end
             end
         end
     end
-
+    
     if RenderCrates.Value then
-        local MaxDistance = CrateDistance.Value
+        local Maximum = CrateDistance.Value
+        
         for Crate, Data in pairs(Stored.Crates) do
             if not Crate.Parent or not CrateValid(Crate.Name) then
                 Stored.Crates[Crate] = nil
-            end
-        end
-        
-        for Crate, Data in pairs(Stored.Crates) do
-            if Crate.Parent then
+            else
                 local Object = Crate.PrimaryPart
-                if not Object or vector.magnitude(Client.Position - Object.Position) > MaxDistance then
+                if not Object or vector.magnitude(ClientPosition - Object.Position) > Maximum then
                     Stored.Crates[Crate] = nil
                 else
+                    Data.Inventory = {}
                     if DisplayInventory.Value then
-                        local InventoryFolder = Crate:FindFirstChild("Inventory")
-                        local FilteredItems = {}
-                        if InventoryFolder then
-                            for _, Item in ipairs(InventoryFolder:GetChildren()) do
+                        local Inv = Crate:FindFirstChild("Inventory")
+                        if Inv then
+                            for _, Item in ipairs(Inv:GetChildren()) do
                                 if CrateItemValid(Item.Name) then
-                                    table.insert(FilteredItems, Item.Name)
+                                    table.insert(Data.Inventory, Item.Name)
                                 end
                             end
                         end
-                        Data.Inventory = FilteredItems
-                    else
-                        Data.Inventory = {}
                     end
                 end
             end
         end
         
         if Containers then
-            for _, Container in ipairs(Containers:GetChildren()) do
-                if Container.ClassName == "Folder" then
-                    for _, Crate in ipairs(Container:GetChildren()) do
-                        if not Stored.Crates[Crate] and Crate:GetAttribute("CanSpawnLoot") then
-                            local Object = Crate.PrimaryPart
-                            if Object then
-                                local Distance = vector.magnitude(Client.Position - Object.Position)
-                                local Name = Crate:GetAttribute("DisplayName") or Crate.Name
-                                if Distance <= MaxDistance and CrateValid(Crate.Name) then
-                                    local FilteredItems = {}
-                                    if DisplayInventory.Value then
-                                        local InventoryFolder = Crate:FindFirstChild("Inventory")
-                                        if InventoryFolder then
-                                            for _, Item in ipairs(InventoryFolder:GetChildren()) do
-                                                if CrateItemValid(Item.Name) then
-                                                    table.insert(FilteredItems, Item.Name)
-                                                end
-                                            end
-                                        end
-                                    end
-                                    Stored.Crates[Crate] = {
-                                        Item = Crate,
-                                        Object = Object,
-                                        Name = Name,
-                                        Inventory = FilteredItems
-                                    }
-                                end
-                            end
-                        end
-                    end
-                elseif Container.ClassName == "Model" and not Stored.Crates[Container] and Container:GetAttribute("CanSpawnLoot") then
-                    local Object = Container.PrimaryPart
+            local function AddCrate(Crate)
+                if not Stored.Crates[Crate] and Crate:GetAttribute("CanSpawnLoot") then
+                    local Object = Crate.PrimaryPart
                     if Object then
-                        local Distance = vector.magnitude(Client.Position - Object.Position)
-                        local Name = Container:GetAttribute("DisplayName") or Container.Name
-                        if Distance <= MaxDistance and CrateValid(Container.Name) then
+                        local Distance = vector.magnitude(ClientPosition - Object.Position)
+                        local Name = Crate:GetAttribute("DisplayName") or Crate.Name
+                        if Distance <= Maximum and CrateValid(Crate.Name) then
                             local FilteredItems = {}
                             if DisplayInventory.Value then
-                                local InventoryFolder = Container:FindFirstChild("Inventory")
-                                if InventoryFolder then
-                                    for _, Item in ipairs(InventoryFolder:GetChildren()) do
+                                local Inv = Crate:FindFirstChild("Inventory")
+                                if Inv then
+                                    for _, Item in ipairs(Inv:GetChildren()) do
                                         if CrateItemValid(Item.Name) then
                                             table.insert(FilteredItems, Item.Name)
                                         end
                                     end
                                 end
                             end
-                            Stored.Crates[Container] = {
-                                Item = Container,
-                                Object = Object,
-                                Name = Name,
-                                Inventory = FilteredItems
-                            }
+                            Stored.Crates[Crate] = { Item = Crate, Object = Object, Name = Name, Inventory = FilteredItems }
                         end
                     end
                 end
             end
-        end
-    end
-
-    if RenderCorpses.Value then
-        local MaxDistance = CorpseDistance.Value
-        for Corpse, Data in pairs(Stored.Corpses) do
-            if not Corpse.Parent then
-                Stored.Corpses[Corpse] = nil
-            else
-                local Object = Corpse.PrimaryPart
-                if not Object or vector.magnitude(Client.Position - Object.Position) > MaxDistance then
-                    Stored.Corpses[Corpse] = nil
+            
+            for _, Container in ipairs(Containers:GetChildren()) do
+                if Container.ClassName == "Folder" then
+                    for _, Crate in ipairs(Container:GetChildren()) do
+                        AddCrate(Crate)
+                    end
+                elseif Container.ClassName == "Model" then
+                    AddCrate(Container)
                 end
             end
         end
+    end
+    
+    if RenderCorpses.Value then
+        local Maximum = CorpseDistance.Value
+        Process(true, Stored.Corpses, Maximum, nil)
         
         if Dropped then
             for _, Corpse in ipairs(Dropped:GetChildren()) do
                 if Corpse:FindFirstChild("Head") and Corpse.ClassName == "Model" and not Stored.Corpses[Corpse] then
                     local Object = Corpse.PrimaryPart
-                    if Object then
-                        local Distance = vector.magnitude(Client.Position - Object.Position)
-                        if Distance <= MaxDistance then
-                            Stored.Corpses[Corpse] = {
-                                Item = Corpse,
-                                Object = Object,
-                                Name = Corpse:GetAttribute("DisplayName") or Corpse.Name
-                            }
-                        end
+                    if Object and vector.magnitude(ClientPosition - Object.Position) <= Maximum then
+                        Stored.Corpses[Corpse] = {
+                            Item = Corpse,
+                            Object = Object,
+                            Name = Corpse:GetAttribute("DisplayName") or Corpse.Name
+                        }
                     end
                 end
             end
         end
     end
-
+    
     if RenderVehicles.Value then
-        local MaxDistance = VehicleDistance.Value
-        for Vehicle, Data in pairs(Stored.Vehicles) do
-            if not Vehicle.Parent or not ItemValid(Data.Item.Name) then
-                Stored.Vehicles[Vehicle] = nil
-            end
-        end
+        local Maximum = VehicleDistance.Value
         
         for Vehicle, Data in pairs(Stored.Vehicles) do
-            if Vehicle.Parent then
+            if not Vehicle.Parent then
+                Stored.Vehicles[Vehicle] = nil
+            else
                 local Body = Vehicle:FindFirstChild("Body")
                 local Object = Body and Body.PrimaryPart
-                if not Object or vector.magnitude(Client.Position - Object.Position) > MaxDistance then
+                if not Object or vector.magnitude(ClientPosition - Object.Position) > Maximum then
                     Stored.Vehicles[Vehicle] = nil
                 end
             end
@@ -1092,16 +1071,28 @@ local function Cache()
                 if Vehicle.ClassName == "Model" and not Stored.Vehicles[Vehicle] then
                     local Body = Vehicle:FindFirstChild("Body")
                     local Object = Body and Body.PrimaryPart
-                    if Object then
-                        local Distance = vector.magnitude(Client.Position - Object.Position)
+                    if Object and vector.magnitude(ClientPosition - Object.Position) <= Maximum then
                         local Name = Vehicle.Name.. " [".. Vehicle:GetAttribute("VehicleType").. "]"
-                        if Distance <= MaxDistance then
-                            Stored.Vehicles[Vehicle] = {
-                                Item = Vehicle,
-                                Object = Object,
-                                Name = Name
-                            }
-                        end
+                        Stored.Vehicles[Vehicle] = { Item = Vehicle, Object = Object, Name = Name }
+                    end
+                end
+            end
+        end
+    end
+    
+    if RenderExits.Value then
+        local Maximum = ExitDistance.Value
+        Process(true, Stored.Exits, Maximum, nil)
+        
+        if ExitLocations then
+            for _, Exit in ipairs(ExitLocations:GetChildren()) do
+                if Exit.ClassName == "Part" and not Stored.Exits[Exit] then
+                    if vector.magnitude(ClientPosition - Exit.Position) <= Maximum then
+                        Stored.Exits[Exit] = {
+                            Item = Exit,
+                            Object = Exit,
+                            Name = "Exit Location"
+                        }
                     end
                 end
             end
@@ -1119,7 +1110,7 @@ local function Render()
                 local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
                 if OnScreen then
                     if RenderDropsHighlight.Value then
-                        Module.Highlight(Color3.fromRGB(255, 255, 255), Object, { Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = true, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Color3.fromRGB(255, 100, 150), FillOpacity = 1})
+                        Module.Highlight(Interface.Coloring.Border.Inner, Object, { Outline = false, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = false, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Interface.Coloring.Accent, FillOpacity = 1})
                     end
                     DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(255, 255, 255), 1, Data.Name, true, "Proggy")
                 end
@@ -1134,7 +1125,7 @@ local function Render()
                 local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
                 if OnScreen then
                     if RenderCratesHighlight.Value then
-                        Module.Highlight(Color3.fromRGB(255, 255, 255), Object, { Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = true, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Color3.fromRGB(255, 100, 150), FillOpacity = 1})
+                        Module.Highlight(Interface.Coloring.Border.Inner, Object, { Outline = false, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = false, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Interface.Coloring.Accent, FillOpacity = 1})
                     end
                     
                     DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(255, 255, 255), 1, Data.Name, true, "Proggy")
@@ -1156,7 +1147,7 @@ local function Render()
                 local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
                 if OnScreen then
                     if RenderCorpsesHighlight.Value then
-                        Module.Highlight(Color3.fromRGB(255, 255, 255), Data.Item, { Outline = true, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = true, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Color3.fromRGB(255, 100, 150), FillOpacity = 1})
+                        Module.Highlight(Interface.Coloring.Border.Inner, Data.Item, { Outline = false, OutlineColor = Color3.fromRGB(0, 0, 0), OutlineThickness = 1, Inline = false, InlineColor = Color3.fromRGB(0, 0, 0), InlineThickness = 1, Fill = true, FillColor = Interface.Coloring.Accent, FillOpacity = 1})
                     end
                     DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(255, 255, 255), 1, Data.Name..  "'s Corpse", true, "Proggy")
                 end
@@ -1171,6 +1162,18 @@ local function Render()
                 local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
                 if OnScreen then
                     DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(255, 255, 255), 1, Data.Name, true, "Proggy")
+                end
+            end
+        end
+    end
+
+    if RenderExits.Value then
+        for _, Data in pairs(Stored.Exits) do
+            local Object = Data.Object
+            if Object and Object.Parent then
+                local Screen, OnScreen = Camera:WorldToScreenPoint(Object.Position)
+                if OnScreen then
+                    DrawingImmediate.OutlinedText(Screen, 13, Color3.fromRGB(0, 255, 100), 1, Data.Name, true, "Proggy")
                 end
             end
         end
@@ -1190,9 +1193,7 @@ task.spawn(function()
 			pcall(function()
 				for _, NPC in ipairs(Zone:GetChildren()) do
 					pcall(function()
-						if typeof(NPC) ~= "Instance" or NPC.ClassName ~= "Model" then
-							return
-						end
+						if typeof(NPC) ~= "Instance" or NPC.ClassName ~= "Model" then return end
 
 						local Humanoid = NPC:FindFirstChildOfClass("Humanoid")
 						if not Humanoid then return end
@@ -1213,9 +1214,7 @@ task.spawn(function()
 								Stored.AI[ID] = NPC
 							end
 						else
-							edit_model_data({
-								Health = Humanoid.Health
-							}, Key)
+							edit_model_data({Health = Humanoid.Health}, Key)
 						end
 
 						Seen[Key] = true
@@ -1293,8 +1292,15 @@ task.spawn(function()
 end)
 
 local function DrawWindow(Position, Character, Transparency)
-    local X = Position.X; local Y = Position.Y; local Width = Interface.Dimensions.Width; local Height = Interface.Dimensions.Height; local Coloring = Interface.Coloring
-    local ContentX = X + 6; local ContentY = Y + 6; local ContentW = Width - 12; local ContentH = Height - 12
+    local X = Position.X
+    local Y = Position.Y
+    local Width = Interface.Dimensions.Width
+    local Height = Interface.Dimensions.Height
+    local Coloring = Interface.Coloring
+    local ContentX = X + 6
+    local ContentY = Y + 6
+    local ContentW = Width - 12
+    local ContentH = Height - 12
 
     DrawingImmediate.FilledRectangle(Vector2.new(X, Y), Vector2.new(Width, Height), Coloring.Border.Outer, Transparency)
     DrawingImmediate.FilledRectangle(Vector2.new(X + 2, Y + 2), Vector2.new(Width - 4, Height - 4), Coloring.Border.Inner, Transparency)
@@ -1308,11 +1314,51 @@ local function DrawWindow(Position, Character, Transparency)
     if WeaponName == "" or WeaponName == "None" then WeaponName = "No Weapon" end
     DrawingImmediate.OutlinedText(Vector2.new(X + Width / 2, ContentY + 12), Interface.MediumText, Coloring.Text, Transparency, WeaponName, true, Interface.Font)
 
-    local CurrentHealth = 0; local MaxHealth = 100
-    if Character then local Hum = Stored.Humanoid[Character]; if not Hum or not Hum.Parent then Hum = Character:FindFirstChildOfClass("Humanoid"); Stored.Humanoid[Character] = Hum end; if Hum then if Stored.Health[Character] == nil then Stored.Health[Character] = tonumber(Hum.MaxHealth) or 100 end; MaxHealth = Stored.Health[Character] or 100; CurrentHealth = tonumber(Hum.Health) or 0 end end
+    local CurrentHealth = 0
+    local MaxHealth = 100
+    if Character then
+        local Hum = Stored.Humanoid[Character]
+        if not Hum or not Hum.Parent then
+            Hum = Character:FindFirstChildOfClass("Humanoid")
+            Stored.Humanoid[Character] = Hum
+        end
+        if Hum then
+            if Stored.Health[Character] == nil then
+                Stored.Health[Character] = tonumber(Hum.MaxHealth) or 100
+            end
+            MaxHealth = Stored.Health[Character] or 100
+            CurrentHealth = tonumber(Hum.Health) or 0
+        end
+    end
+    
     local Percent = math.clamp((MaxHealth == 0) and 0 or (CurrentHealth / MaxHealth), 0, 1)
-    local BarW = ContentW - 18; local BarH = Interface.SmallText + 4; local BarX = ContentX + 9; local BarY = ContentY + ContentH - (BarH + 6)
-    local FillW = math.floor((BarW - 4) * Percent); if Percent > 0 and FillW < 2 then FillW = 2 end
+    local BarW = ContentW - 18
+    local BarH = Interface.SmallText + 4
+    local BarX = ContentX + 9
+    local BarY = ContentY + ContentH - (BarH + 6)
+    local FillW = math.floor((BarW - 4) * Percent)
+    if Percent > 0 and FillW < 2 then FillW = 2 end
+
+    local LocalCharacter = LocalPlayer.Character
+    if LocalCharacter then
+        local LocalHumanoid = LocalCharacter:FindFirstChildOfClass("Humanoid")
+        if LocalHumanoid then
+            local LocalHealth = LocalHumanoid.Health
+            local Indication = "Even"
+            local IndicationColor = Coloring.Text
+            
+            if LocalHealth > CurrentHealth then
+                Indication = "You're Winning!"
+                IndicationColor = Color3.fromRGB(0, 255, 0)
+            elseif LocalHealth < CurrentHealth then
+                Indication = "You're Losing!"
+                IndicationColor = Color3.fromRGB(255, 0, 0)
+            end
+            
+            local TextY = BarY - 15
+            DrawingImmediate.OutlinedText(Vector2.new(BarX, TextY), Interface.SmallText, IndicationColor, Transparency, Indication, false, Interface.Font)
+        end
+    end
 
     DrawingImmediate.FilledRectangle(Vector2.new(BarX, BarY), Vector2.new(BarW, BarH), Color3.fromRGB(18, 18, 18), Transparency)
     DrawingImmediate.FilledRectangle(Vector2.new(BarX + 1, BarY + 1), Vector2.new(BarW - 2, BarH - 2), Color3.fromRGB(28, 28, 28), Transparency)
@@ -1358,14 +1404,12 @@ local function DrawClothingWindow(Position, Character, Transparency)
     local BoxY = ContentY + 22
     
     local function Shorten(String, Maximum)
-        if #String <= Maximum then
-            return String
-        end
+        if #String <= Maximum then return String end
         return string.sub(String, 1, Maximum - 2) .. ".."
     end
     
-    for i, Item in ipairs(ClothingItems) do
-        local BoxX = StartX + ((i - 1) * (BoxWidth + Spacing))
+    for Index, Item in ipairs(ClothingItems) do
+        local BoxX = StartX + ((Index - 1) * (BoxWidth + Spacing))
         
         DrawingImmediate.OutlinedText(Vector2.new(BoxX + BoxWidth / 2, LabelY), Interface.SmallText, Coloring.Text, Transparency, Item.Name, true, Interface.Font)
         DrawingImmediate.FilledRectangle(Vector2.new(BoxX, BoxY), Vector2.new(BoxWidth, BoxHeight), Color3.fromRGB(18, 18, 18), Transparency)
@@ -1377,10 +1421,20 @@ end
 RunService.Render:Connect(function()
     Render()
     
-    local Player = GetClosestPlayer()
-    if not Player or not Player.Character then return end
-
-    local Target = Player.Character
+    local Entity = GetClosestEntity()
+    if not Entity then return end
+    
+    local Target
+    if Entity.ClassName == "Player" then
+        if not Entity.Character then return end
+        Target = Entity.Character
+    elseif Entity.ClassName == "Model" then
+        local HumanoidRootPart = Entity:FindFirstChild("HumanoidRootPart")
+        if not HumanoidRootPart then return end
+        Target = Entity
+    else
+        return
+    end
     
     local ClothingWindowPosition = Vector2.new((Camera.ViewportSize.X / 2) - 200, Camera.ViewportSize.Y - Interface.Dimensions.Height - 180)
     DrawClothingWindow(ClothingWindowPosition, Target, 1)
