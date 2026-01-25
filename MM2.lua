@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = Workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
-local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jimenth/fawk/refs/heads/main/AABB.lua"))()
+local Module = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jimenth/Severe/refs/heads/main/Modules/Bounding.lua"))()
 
 local Roles = {
     Knife = {"Murderer", Color3.fromRGB(255, 0, 0)},
@@ -80,7 +80,7 @@ local function Render()
     if Gun then
         local Screen, OnScreen = Camera:WorldToScreenPoint(Gun.Position)
         if OnScreen then
-            DrawingImmediate.OutlinedText(Screen, 14, Color3.fromRGB(0, 255, 0), 1, "Gun", true, "Proxyma_Condensed")
+            DrawingImmediate.OutlinedText(Screen, 14, Color3.fromRGB(0, 255, 0), 1, "Gun", true, "Proggy")
         end
     end
 
@@ -98,7 +98,7 @@ local function Render()
                     local CenterX = BoundingBox.Position.X + BoundingBox.Size.X * 0.5
                     local BottomY = BoundingBox.Position.Y + BoundingBox.Size.Y + 1
 
-                    DrawingImmediate.OutlinedText(Vector2.new(CenterX, BottomY), 14, Color, 1, Role, true, "Proxyma_Condensed")
+                    DrawingImmediate.OutlinedText(Vector2.new(CenterX, BottomY), 14, Color, 1, Role, true, "Proggy")
                 end
             end
         end
@@ -107,7 +107,7 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(2)
+        task.wait(1)
         
         local NewMap = GetMap()
         if NewMap ~= Cache.Map then
