@@ -16,7 +16,9 @@ local function IsPlayerModel(Model)
     return Model:FindFirstChild("BillboardGui") ~= nil
 end
 
-local function IsZombieModel(Model) return Model.Name == "Zombie" end
+local function IsZombieModel(Model) 
+    return Model.Name == "Zombie" 
+end
 
 local function GetClosestPlayer()
     local Camera = Workspace:FindFirstChild("Camera")
@@ -24,13 +26,12 @@ local function GetClosestPlayer()
 
     local Closest = nil
     local ClosestDistance = math.huge
-    local CameraPosition = Camera.CFrame.Position
 
     for _, Model in pairs(Workspace:GetChildren()) do
         if Model.ClassName == "Model" and Model.Name == "Male" and IsPlayerModel(Model) then
-            local Root = Model:FindFirstChild("Root")
-            if Root then
-                local Distance = vector.magnitude(Root.Position - CameraPosition)
+            local HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart")
+            if HumanoidRootPart then
+                local Distance = vector.magnitude(HumanoidRootPart.Position - Camera.Position)
                 if Distance < ClosestDistance then
                     ClosestDistance = Distance
                     Closest = Model
@@ -64,7 +65,7 @@ local function GetBodyParts(Model)
         RightLowerLeg = Model:FindFirstChild("RightLowerLeg"),
         RightFoot = Model:FindFirstChild("RightFoot"),
 
-        HumanoidRootPart = Model:FindFirstChild("Root"),
+        HumanoidRootPart = Model:FindFirstChild("HumanoidRootPart"),
     }
 end
 
@@ -98,7 +99,7 @@ local function PlayerData(Model, Parts)
         RightFoot = Parts.RightFoot,
         BodyHeightScale = 1,
         RigType = 1,
-        Toolname = "idk",
+        Toolname = "Unknown",
         Teamname = IsPlayerModel(Model) and "Players" or IsZombieModel(Model) and "Zombies" or "NPCs",
         Whitelisted = false,
         Archenemies = false,
@@ -169,16 +170,16 @@ local function Update()
                     if PlaceID ~= Places["Zombies"] and ClosestPlayer and Object == ClosestPlayer then return end
 
                     if not Added[Key] then
-                        local success2, ID, Data = pcall(function()
+                        local Success2, ID, Data = pcall(function()
                             return PlayerData(Object, Parts)
                         end)
                         
-                        if success2 and ID and Data then
-                            local success3, result = pcall(function()
+                        if Success2 and ID and Data then
+                            local Success3, result = pcall(function()
                                 return add_model_data(Data, ID)
                             end)
                             
-                            if success3 and result then
+                            if Success3 and result then
                                 Added[ID] = Object
                             end
                         end
@@ -198,9 +199,9 @@ local function Update()
                 return
             end
             
-            local success, HumanoidRootPart = pcall(function() return Model:FindFirstChild("Root") end)
+            local Success, HumanoidRootPart = pcall(function() return Model:FindFirstChild("HumanoidRootPart") end)
             
-            if not success then HumanoidRootPart = nil end
+            if not Success then HumanoidRootPart = nil end
             
             if not HumanoidRootPart or not Seen[Key] then
                 pcall(function() remove_model_data(Key) end)
@@ -237,14 +238,11 @@ local function LocalPlayerData()
     override_local_data(LocalData)
 end
 
-task.spawn(function()
-    while true do
-        task.wait(1/60)
-        Update()
+RunService.PostLocal:Connect(function()
+    Update()
 
-        local LocalID, LocalData = LocalPlayerData()
-        if LocalID and LocalData then
-            override_local_data(LocalData)
-        end
+    local LocalID, LocalData = LocalPlayerData()
+    if LocalID and LocalData then
+        override_local_data(LocalData)
     end
 end)
