@@ -68,7 +68,7 @@ function Module.Functions.PlayerData(Model, Parts)
 		Whitelisted = false,
 		Archenemies = false,
 		Teamname = Module.Functions.TeamCheck(Model) and "Friendly" or "Enemy",
-		Toolname = "Idk man",
+		Toolname = "Unknown",
 		Aimbot_Part = Parts.Head,
 		Aimbot_TP_Part = Parts.Head,
 		Triggerbot_Part = Parts.Head,
@@ -103,7 +103,7 @@ function Module.Functions.LocalPlayerData()
 		MaxHealth = 100,
 		RigType = 0,
 		Teamname = "Friendly",
-		Toolname = "Idk man",
+		Toolname = "Unknown",
 
 		Head = Parts.Head,
 		RootPart = Parts.HumanoidRootPart,
@@ -154,13 +154,11 @@ function Module.Functions.Update()
 	end
 end
 
-task.spawn(function()
-    while task.wait(1 / 30) do
-        Module.Functions.Update()
+RunService.PostLocal:Connect(function()
+    Module.Functions.Update()
 
-		local LocalID, LocalData = Module.Functions.LocalPlayerData()
-        if LocalID and LocalData then
-            override_local_data(LocalData)
-        end
+	local LocalID, LocalData = Module.Functions.LocalPlayerData()
+    if LocalID and LocalData then
+        override_local_data(LocalData)
     end
 end)
