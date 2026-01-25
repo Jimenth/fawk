@@ -75,7 +75,7 @@ local function PlayerData(Model, Parts)
         BodyHeightScale = 1,
         RigType = 1,
         Teamname = "Players",
-        Toolname = " ",
+        Toolname = "Unknown",
         Whitelisted = false,
         Archenemies = false,
         Aimbot_Part = Parts.Head,
@@ -142,7 +142,7 @@ local function LocalPlayerData()
         MaxHealth = Humanoid.MaxHealth,
         RigType = 1,
         Teamname = "Players",
-        Toolname = " ",
+        Toolname = "Unknown",
 
         Head = LocalCharacter:FindFirstChild("Head"),
         RootPart = LocalCharacter:FindFirstChild("HumanoidRootPart"),
@@ -191,14 +191,11 @@ local function Update()
     end
 end
 
-task.spawn(function()
-    while true do
-        task.wait(1/60)
-        Update()
+RunService.PostLocal:Connect(function()
+    Update()
 
-        local LocalID, LocalData = LocalPlayerData()
-        if LocalID and LocalData then
-            override_local_data(LocalData)
-        end
+    local LocalID, LocalData = LocalPlayerData()
+    if LocalID and LocalData then
+        override_local_data(LocalData)
     end
 end)
